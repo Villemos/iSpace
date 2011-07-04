@@ -1,0 +1,39 @@
+
+Data Flow
+Injection, from source to Solr;
+1. Source raw.
+2. Exchange, with in body = List<InformationObject>
+3. SolrStore
+
+Retrieval, from retriever to Solr, then back
+1. Exchange with in body = List<String> (tokens)
+2. Solr Retriever -> SolrDocuments
+2. Exchange, with out body = List<InformationObject>
+
+
+Implement a self extending 'smartlist' for accessing SOLR documents. When the last element is reached, the list tries to retrieve the next batch of results automatically.
+
+Add security field to all documents. Empty means none. Else the value is the name of a proviedge that the user must have to access it. In the retrieval chain, add a 'security filter' that replaces the entries with non-hold priviledges with empty entries, holding only the entry ID. Make a new UUI ID field for all entries, that identifies the entry without any reference to what or where it is. 
+
+
+SOLR Document -> Exchange with fields in header -> Object
+
+
+
+Crawl EMITS
+Crawl CCSDS
+Crawl ECSS
+
+For web pages, add a flag indicating that a login is needed to access the original source and give a link to where to register.
+
+When company register, then they also register their website. The website is thereafter included in the crawls.
+
+Create and use AOP for the creation of user stories in the code and the link to JFeature.
+Use the docgenerator plugin.
+
+Make a profile collector, which will activly try to find details on a person on the net, for example his linkedin profile.  
+
+Use annotations to mark fields as 'discrete' and create synonyms from these.
+
+Process image
+- Detect colours used. http://sourceforge.net/projects/jiu/forums/forum/51534/topic/3883065 

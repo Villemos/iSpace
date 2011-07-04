@@ -1,0 +1,94 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>base</artifactId>
+    <groupId>com.villemos.sdms</groupId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <groupId>com.villemos.sdms</groupId>
+  <artifactId>documentcrawler</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  
+  <dependencies>
+  
+  		<dependency>
+			<groupId>com.villemos.sdms</groupId>
+			<artifactId>core</artifactId>
+			<version>0.0.1-SNAPSHOT</version>  		
+  		</dependency>
+  
+  		<!-- See http://sourceforge.net/apps/trac/aperture/wiki/MavenDependency for details -->
+		<dependency>
+	  	 	<groupId>org.semanticdesktop.aperture</groupId>
+  	  		<artifactId>aperture-core</artifactId>
+  	  		<version>1.5.0</version>
+  		</dependency>
+
+  		<dependency>
+  	  		<groupId>org.semanticdesktop.aperture</groupId>
+  	  		<artifactId>aperture-runtime-optional</artifactId>
+  	  		<version>1.5.0</version>
+  	  		<type>pom</type>
+  		</dependency>  	
+  	
+  	
+<!--		<dependency>-->
+<!--			<groupId>org.slf4j</groupId>-->
+<!--			<artifactId>slf4j-log4j12</artifactId>-->
+<!--			<version>1.5.5</version>-->
+<!--		</dependency>-->
+
+		<dependency>
+			<groupId>org.semweb4j</groupId>
+			<artifactId>rdf2go.impl.jena24</artifactId>
+			<version>4.7.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.semweb4j</groupId>
+					<artifactId>rdf2go.api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>com.hp.hpl.jena</groupId>
+			<artifactId>iri</artifactId>
+			<version>0.5</version>
+		</dependency>
+
+		    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+		
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-spring</artifactId>
+      <scope>compile</scope>
+    </dependency>
+<!---->
+<!--    <dependency>-->
+<!--      <groupId>org.springframework</groupId>-->
+<!--      <artifactId>spring-beans</artifactId>-->
+<!--    </dependency>-->
+<!--		-->
+<!--    <dependency>-->
+<!--      <groupId>org.springframework</groupId>-->
+<!--      <artifactId>spring-context</artifactId>-->
+<!--    </dependency>-->
+<!---->
+<!--    <dependency>-->
+<!--      <groupId>org.springframework</groupId>-->
+<!--      <artifactId>spring-test</artifactId>-->
+<!--      <scope>test</scope>-->
+<!--    </dependency>-->
+
+  </dependencies>
+</project>
