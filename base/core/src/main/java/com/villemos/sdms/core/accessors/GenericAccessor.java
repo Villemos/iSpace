@@ -42,11 +42,10 @@ public class GenericAccessor {
 			/** Configure the request. */
 			SolrQuery query = new SolrQuery(filter);
 			query.setQueryType("basic");
-
 			results = new ArrayList<InformationObject>();
 
 			try {
-				QueryResponse response = AbstractAccessor.getAccessor().getServer().query(query);
+				QueryResponse response = RepositoryLink.getAccessor().getServer().query(query);
 
 				// Step through all results found for the field
 				for (SolrDocument document : response.getResults()) {

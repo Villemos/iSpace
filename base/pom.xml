@@ -1,36 +1,36 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.villemos.sdms</groupId>
+  <groupId>com.villemos.ispace</groupId>
   <artifactId>base</artifactId>
   <packaging>pom</packaging>
-  <version>0.0.1-SNAPSHOT</version>
+  <name>iSpace Base</name>
+  <version>1.0</version>
+  
   <modules>
   	<module>core</module>
-  	<module>documentcrawler</module>
   	<module>enricher</module>
+  	<module>documentcrawler</module>
+  	<module>httpcrawler</module>
+  	<module>consolidator</module>
+  	<module>solr</module>
   </modules>
   
   	<properties>
-		<rxtx.version>2.1.7</rxtx.version>
 		<log4j.version>1.2.16</log4j.version>
 		<spring.version>3.0.5.RELEASE</spring.version>
 		<junit.version>4.8.2</junit.version>
-		<castor.version>1.3.1</castor.version>
 		<camel.version>2.7.0</camel.version>
 		<activemq.version>5.4.2</activemq.version>
-		<mysqlconnector.version>5.1.10</mysqlconnector.version>
-		<jencks.version>2.2</jencks.version>
 		<commonslogging.version>1.1.1</commonslogging.version>
 		<slf4j.version>1.6.1</slf4j.version>
-		<docgenerator.version>0.0.7</docgenerator.version>
 		<maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<h2.version>1.2.147</h2.version>
 		<surefire-plugin.version>2.7.1</surefire-plugin.version>
 		<commons-io.version>2.0.1</commons-io.version>
-		<commons-dbcp.version>1.4</commons-dbcp.version>
-	</properties>
+		<solr.version>3.3.0</solr.version>
+		<solrj.version>3.3.0</solrj.version>
+  	</properties>
   
   
   <dependencyManagement>
@@ -103,12 +103,6 @@
 			</dependency>
 
 			<dependency>
-				<groupId>mysql</groupId>
-				<artifactId>mysql-connector-java</artifactId>
-				<version>${mysqlconnector.version}</version>
-			</dependency>
-
-			<dependency>
 				<groupId>org.apache.camel</groupId>
 				<artifactId>camel-core</artifactId>
 				<version>${camel.version}</version>
@@ -152,24 +146,6 @@
 			</dependency>
 
 			<dependency>
-				<groupId>org.jencks</groupId>
-				<artifactId>jencks-amqpool</artifactId>
-				<version>${jencks.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.codehaus.castor</groupId>
-				<artifactId>castor-core</artifactId>
-				<version>${castor.version}</version>
-			</dependency>
-
-			<dependency>
-				<groupId>org.codehaus.castor</groupId>
-				<artifactId>castor-xml</artifactId>
-				<version>${castor.version}</version>
-			</dependency>
-
-			<dependency>
 				<groupId>log4j</groupId>
 				<artifactId>log4j</artifactId>
 				<version>${log4j.version}</version>
@@ -181,6 +157,18 @@
 				<version>${commonslogging.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.apache.solr</groupId>
+				<artifactId>solr-solrj</artifactId>
+				<version>${solrj.version}</version>
+			</dependency>
+
+		    <dependency>
+		      <groupId>org.slf4j</groupId>
+		      <artifactId>slf4j-log4j12</artifactId>
+		      <version>${slf4j.version}</version>
+		    </dependency>
+		
 		</dependencies>
 	</dependencyManagement>
 

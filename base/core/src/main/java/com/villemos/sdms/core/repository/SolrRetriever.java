@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 
-import com.villemos.sdms.core.accessors.AbstractAccessor;
+import com.villemos.sdms.core.accessors.RepositoryLink;
 import com.villemos.sdms.core.io.InformationObject;
 
 /**
@@ -60,7 +60,7 @@ public class SolrRetriever extends SolrAccessor {
 		query.setRows(1000);
 
 		try {
-			QueryResponse response = AbstractAccessor.getAccessor().getServer().query(query);
+			QueryResponse response = RepositoryLink.getAccessor().getServer().query(query);
 
 			// Step through all results found for the field
 			for (SolrDocument document : response.getResults()) {

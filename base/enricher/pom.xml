@@ -2,10 +2,38 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>base</artifactId>
-    <groupId>com.villemos.sdms</groupId>
-    <version>0.0.1-SNAPSHOT</version>
+    <groupId>com.villemos.ispace</groupId>
+    <version>1.0</version>
   </parent>
-  <groupId>com.villemos.sdms</groupId>
+  <groupId>com.villemos.ispace</groupId>
   <artifactId>enricher</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <name>iSpace Enricher - Pipeline</name>
+  <version>0.1-SNAPSHOT</version>
+  
+  <dependencies>
+  	<dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+		
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.5.8</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-jdk14</artifactId>
+			<version>1.5.8</version>
+		</dependency>		
+
+  </dependencies>
 </project>

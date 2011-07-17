@@ -48,7 +48,7 @@ public class SynonymExpanderTest extends TestCase {
 		Map<String, List<String>> synonymMap = new HashMap<String, List<String>>();
 		synonymMap.put("OPS", synonyms);
 		
-		expander.setSynonyms(synonymMap);
+		// expander.setSynonyms(synonymMap);
 		
 		List<String> tokens = new ArrayList<String>();
 		tokens.add("OPS");

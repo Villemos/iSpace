@@ -23,20 +23,19 @@
 package com.villemos.sdms.core.repository;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
-import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import org.apache.camel.Body;
 import org.apache.camel.Handler;
+import org.apache.camel.Headers;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 
-import com.villemos.sdms.core.accessors.AbstractAccessor;
-import com.villemos.sdms.core.io.InformationObject;
+import com.villemos.sdms.core.accessors.RepositoryLink;
 
 
 
@@ -44,25 +43,20 @@ public class SolrStorer extends SolrAccessor {
 
 	private static org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(SolrStorer.class);
 
-	protected Pattern solrField = Pattern.compile("doc.(\\w+)");
-
 	@Handler
-	public void store(@Body List<InformationObject> iObjects) {
+	public void store(@Headers Map<String, Object> headers) {
 		try {
-			for (InformationObject iObject : iObjects) {
-				SolrInputDocument document = toSolr(iObject);
+			SolrInputDocument document = toSolr(headers);
 
-				UpdateResponse response = AbstractAccessor.getAccessor().getServer().add(document);
-				if (response.getStatus() == 500) {
-					logger.error("");
-				}
+			UpdateResponse response = RepositoryLink.getAccessor().getServer().add(document);
+			if (response.getStatus() == 500) {
+				logger.error("");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
 		try {
-			AbstractAccessor.getAccessor().getServer().commit();
+			RepositoryLink.getAccessor().getServer().commit();
 		} catch (SolrServerException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -72,28 +66,27 @@ public class SolrStorer extends SolrAccessor {
 		}
 	}
 
-	protected SolrInputDocument toSolr(InformationObject iObject) {
+	protected SolrInputDocument toSolr(Map<String, Object>  headers) {
 		SolrInputDocument document = new SolrInputDocument();
 
-		iObject.hasTimestamp = (new Date()).getTime();
+		document.addField("hdTimestamp", (new Date()).getTime());
 
-		try {
-			for (Field field : getAllFields(iObject.getClass())) {
-				if (field.get(iObject) != null) {
-					if (field.getClass().isArray()) {
-						int length = Array.getLength(field);
-						for (int i = 0; i < length; i ++) {
-							document.addField(field.getName(), Array.get(field, i));
-						}
-					}
-					else {
-						document.setField(field.getName(), field.get(iObject));
+		Iterator<Entry<String, Object>> it = headers.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, Object> entry = it.next();
+			
+			if (entry.getKey().startsWith("iSpace")) {
+				String key = entry.getKey().replaceAll("iSpace.", "");
+				if (entry.getValue() instanceof List) {
+					for (Object value : (List<Object>) entry.getValue()) {
+						document.addField(key, value);
 					}
 				}
+				else {
+					document.addField(key, entry.getValue());					
+				}
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} 
+		}		
 
 		return document;
 	}

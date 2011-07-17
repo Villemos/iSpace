@@ -24,7 +24,7 @@ public class TaxonomyExpanderTest extends TestCase {
 		taxonomy.put("OPS-G", Arrays.asList(new String[] {"OPS-GI", "OPS-GM"}));
 
 		TaxonomyExpander expander = new TaxonomyExpander();
-		expander.setTaxonomy(taxonomy);
+		// expander.setTaxonomy(taxonomy);
 		
 		List<String> token = new ArrayList<String>();
 		

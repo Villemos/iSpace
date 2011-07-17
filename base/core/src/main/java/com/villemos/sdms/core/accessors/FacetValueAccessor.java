@@ -31,8 +31,21 @@ import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 
+
+/**
+ * Helper class for accessing facet fields through a repository link.
+ */
 public class FacetValueAccessor {
 
+	
+	/**
+	 * Method to get a set of facet values, possibly based on a queue. 
+	 * 
+	 * @param field The field against which the search should be performed.
+	 * @param value The value to be searched for.
+	 * @param facet The facet name of which the values should be retrieved.
+	 * @return Map of results, keyed on the count and containing the facet value.
+	 */
 	public Map<Long, String> getFacetValues(String field, String value, String facet) {
 
 		/** Configure the request. */
@@ -48,7 +61,7 @@ public class FacetValueAccessor {
 
 		try
 		{
-			QueryResponse response = AbstractAccessor.getAccessor().getServer().query(query);
+			QueryResponse response = RepositoryLink.getAccessor().getServer().query(query);
 			
 			// Step through all FACETS found for the field
 			for (FacetField specificFacet : response.getFacetFields()) {
