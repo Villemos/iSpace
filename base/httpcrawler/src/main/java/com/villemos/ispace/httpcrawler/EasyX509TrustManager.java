@@ -14,6 +14,7 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.commons.logging.Log; 
 import org.apache.commons.logging.LogFactory;
 
+
 /**
  * <p>
  * EasyX509TrustManager unlike default {@link X509TrustManager} accepts 
@@ -43,6 +44,8 @@ public class EasyX509TrustManager implements X509TrustManager
     /** Log object for this class. */
     private static final Log Logger = LogFactory.getLog(EasyX509TrustManager.class);
 
+    public EasyX509TrustManager() {};
+    
     /**
      * Constructor for EasyX509TrustManager.
      */

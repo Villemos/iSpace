@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -13,34 +15,60 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.impl.ScheduledPollConsumer;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.URI;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.protocol.Protocol;
-import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CookieStore;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.params.ClientPNames;
+import org.apache.http.client.params.CookiePolicy;
+import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.params.ConnRoutePNames;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.scheme.SocketFactory;
+import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
+import org.apache.http.impl.conn.SingleClientConnManager;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.CoreConnectionPNames;
+import org.apache.http.params.HttpParams;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.ExecutionContext;
+import org.apache.http.protocol.HttpContext;
 
 import com.sun.java.browser.net.ProxyInfo;
 import com.sun.java.browser.net.ProxyService;
+import com.villemos.ispace.fields.Fields;
 
 
 public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 
-	protected HttpClient client = new HttpClient();
+	private static final Log LOG = LogFactory.getLog(HttpCrawlerConsumer.class);
 
-	protected boolean ignoreCertificateFailures;
-
+	protected DefaultHttpClient client = null;
+	protected CookieStore cookieStore = new BasicCookieStore(); 
+	
+	protected boolean ignoreAuthenticationFailure = true;
+	
 	protected long processed = 0;
 	protected long failed = 0;
 
@@ -52,9 +80,10 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 	protected Pattern urlPattern = Pattern.compile("<a href=(\"|\')(.*?)(\'|\")");
 
 	/** Strings defining what a URL must begin with to be within the boundary. */
-	protected List<String> boundaries = null;	
+	protected List<String> boundaries = new ArrayList<String>();	
 
-	private static final Log LOG = LogFactory.getLog(HttpCrawlerConsumer.class);
+	protected HttpHost target = null;
+	protected HttpContext localContext = null;
 
 	public HttpCrawlerConsumer(DefaultEndpoint endpoint, Processor processor) {
 		super(endpoint, processor);
@@ -77,95 +106,155 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 	@Override
 	protected int poll() throws Exception {
 
-		/** 
-		 * Detect whether we sit behind a proxy. If yes, then get the proxy information
-		 * and use it to hop to the target URL.  
-		 * 
-		 * Warning: This use undocumented code, i.e. may not work on some JVS. */
-		String url = getHttpCrawlerEndpoint().getProtocol() + "://" + getHttpCrawlerEndpoint().getDomain() + ":" + getHttpCrawlerEndpoint().getPort() + "/" + getHttpCrawlerEndpoint().getPath();
+		/** Always ignore authentication protocol errors. */
+		if (ignoreAuthenticationFailure) {
+			SSLContext sslContext = SSLContext.getInstance("SSL");
+
+			// set up a TrustManager that trusts everything
+			sslContext.init(null, new TrustManager[] {new EasyX509TrustManager()}, new SecureRandom());
+
+			SchemeRegistry schemeRegistry = new SchemeRegistry();
+			
+			SSLSocketFactory sf = new SSLSocketFactory(sslContext);
+			Scheme httpsScheme = new Scheme("https", sf, 443);
+			schemeRegistry.register(httpsScheme);
+			
+			SocketFactory sfa = new PlainSocketFactory();
+			Scheme httpScheme = new Scheme("http", sfa, 80);
+			schemeRegistry.register(httpScheme);
+
+			HttpParams params = new BasicHttpParams();
+			ClientConnectionManager cm = new SingleClientConnManager(params, schemeRegistry);
+			
+			client = new DefaultHttpClient(cm, params);
+		}
+		else {
+			client = new DefaultHttpClient();
+		}
 
 		String proxyHost = getHttpCrawlerEndpoint().getProxyHost();
 		Integer proxyPort = getHttpCrawlerEndpoint().getProxyPort();
 
 		if (proxyHost != null && proxyPort != null) {
-			client.getHostConfiguration().setProxy(proxyHost, proxyPort);
+			HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+			client.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
 		}
 		else {
-			try {
-				ProxyInfo info[] = ProxyService.getProxyInfo(new URL(url));
-				if(info != null && info.length>0) {
-					proxyHost = info[0].getHost();
-					proxyPort = info[0].getPort();
+			ProxySelectorRoutePlanner routePlanner = new ProxySelectorRoutePlanner(
+					client.getConnectionManager().getSchemeRegistry(),
+					ProxySelector.getDefault());  
+			client.setRoutePlanner(routePlanner);
+		}
 
-					client.getHostConfiguration().setProxy(proxyHost, proxyPort);
-				}
-			}
-			catch (Exception ex) {
-				System.err.println(
-				"could not retrieve proxy configuration, attempting direct connection.");
-			}
-		}
-		
-		if (getHttpCrawlerEndpoint().getProxyUser() != null && getHttpCrawlerEndpoint().getProxyPassword() != null) {
-			client.getState().setProxyCredentials(
-					new AuthScope("http://" + proxyHost, proxyPort, AuthScope.ANY_REALM),
-					new UsernamePasswordCredentials(getHttpCrawlerEndpoint().getProxyUser(), getHttpCrawlerEndpoint().getProxyPassword()));
-		}
 
 		/** The target location may demand authentication. We setup preemptive authentication. */
 		if (getHttpCrawlerEndpoint().getAuthenticationUser() != null && getHttpCrawlerEndpoint().getAuthenticationPassword() != null) {
-			client.getParams().setAuthenticationPreemptive(true);
-
-
-
-			client.getState().setCredentials(
-					new AuthScope(getHttpCrawlerEndpoint().getDomain(), getHttpCrawlerEndpoint().getPort(), AuthScope.ANY_REALM),
-					new UsernamePasswordCredentials(getHttpCrawlerEndpoint().getAuthenticationUser(), getHttpCrawlerEndpoint().getAuthenticationPassword()));
+			client.getCredentialsProvider().setCredentials(
+					new AuthScope(getHttpCrawlerEndpoint().getDomain(), getHttpCrawlerEndpoint().getPort()), 
+					new UsernamePasswordCredentials(getHttpCrawlerEndpoint().getAuthenticationUser(), getHttpCrawlerEndpoint().getAuthenticationPassword()));			
 		}
 
-		/** Always ignore authentication protocol errors. */
-		ProtocolSocketFactory socketFactory = new EasySSLProtocolSocketFactory( );
-		Protocol easyhttps = new Protocol( "https", socketFactory, 443);
-		Protocol.registerProtocol( "https", easyhttps );
 
-		try {
-			URI uri = new URI(url, true);
+		/** Set default cookie policy and store. Can be overridden for a specific method using for example;
+		 *    method.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BROWSER_COMPATIBILITY); 
+		 */
+		client.setCookieStore(cookieStore);		
+		client.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BEST_MATCH);
+		
+		String uriStr = getHttpCrawlerEndpoint().getProtocol() + "://" + getHttpCrawlerEndpoint().getDomain();
+		if (getHttpCrawlerEndpoint().getPort() != 80) {
+			uriStr += ":" + getHttpCrawlerEndpoint().getPort() + "/" + getHttpCrawlerEndpoint().getPath();
+		}		
+		URI uri = new URI(uriStr);
+		
+		if (getHttpCrawlerEndpoint().getPort() != 80) {
+			target = new HttpHost(getHttpCrawlerEndpoint().getDomain(), getHttpCrawlerEndpoint().getPort(), getHttpCrawlerEndpoint().getProtocol());
+		}
+		else {
+			target = new HttpHost(getHttpCrawlerEndpoint().getDomain());
+		}
+		localContext = new BasicHttpContext();
+		localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
+		
+		/** Default boundary is the domain. */
+		boundaries.add(getHttpCrawlerEndpoint().getProtocol() + "://" + getHttpCrawlerEndpoint().getDomain());
+		
+		HttpUriRequest method = createInitialRequest(uri);			
+		HttpResponse response = client.execute(target, method, localContext);
+		
+		if (response.getStatusLine().getStatusCode() == 200) {
+			processSite(uri, response);
+		}
+		else if (response.getStatusLine().getStatusCode() == 302) {
+			HttpHost target = (HttpHost) localContext.getAttribute(ExecutionContext.HTTP_TARGET_HOST);
+			HttpGet get = new HttpGet(target.toURI());
+			// HttpGet get = new HttpGet("https://om.eo.esa.int/oem/kt/dashboard.php");
+			
 
-			/** Build request from headers. */
-			GetMethod method = new GetMethod(uri.toString());
-			method.setDoAuthentication(false);
-			int status = client.executeMethod(method);
-
-			String page = readFully(method.getResponseBodyAsStream());
-
-			/** Detect URLs */
-			detectUrls(page);
-
-			/** Index this page*/
-			submitPage("", page);
-
-			/** Process all URLs */
-			while (uncrawledPages.size() > 0) {
-				String newUrl = uncrawledPages.iterator().next();
-				uncrawledPages.remove(newUrl);
-
-				/** Register this URL as crawled. We do this before we crawl, as no matter whether we succeed or not in
-				 * the crawl of the page, we should not crawl the page again. */
-				crawledPages.add(newUrl);
-				processUrl(newUrl);
-			}
-		} catch (HttpException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			// release any connection resources used by the method
-			// authpost.releaseConnection();
+			/** Read the response fully, to clear it. */
+			HttpEntity entity = response.getEntity();
+			readFully(entity.getContent());
+			
+			response = client.execute(target, get, localContext);
+			processSite(uri, response);
+			System.out.println("Final target: " + target);
+		}
+		else {
+			HttpEntity entity = response.getEntity();
+			InputStream instream = entity.getContent();
+			System.out.println(readFully(instream));
 		}
 
 		return 0;
+	}
+
+
+	/**
+	 * Default method for processing a site, with no special processing. URLs will be detected
+	 * and iterativly parsed.
+	 * 
+	 * Override this method to process a specific site.
+	 * 
+	 * @param method
+	 * @throws IOException
+	 */
+	protected void processSite(URI uri, HttpResponse response) throws IOException {
+
+		/** read the complete page. */
+		String page = readFully(response.getEntity().getContent());
+
+		/** Detect URLs */
+		detectUrls(page);
+
+		/** Index this page*/
+		submitPage(uri.toString(), page);
+
+		/** Process all URLs */
+		while (uncrawledPages.size() > 0) {			
+			String newUrl = uncrawledPages.iterator().next();
+			LOG.info("Crawling url " + newUrl + ". Processed " + crawledPages.size() + "/" + (uncrawledPages.size() + crawledPages.size()) + ".");
+			
+			uncrawledPages.remove(newUrl);
+
+			/** Register this URL as crawled. We do this before we crawl, as no matter whether we succeed or not in
+			 * the crawl of the page, we should not crawl the page again. */
+			crawledPages.add(newUrl);
+			processUrl(newUrl);
+		}
+	}
+
+
+
+	/**
+	 * Method to create the first get call. Per default this simply get the 
+	 * front page. However the method can be overridden to provide more advanced
+	 * processing, such as submitting an initial form with tokens.
+	 * 
+	 * @param uri
+	 * @return
+	 */
+	protected HttpUriRequest createInitialRequest(URI uri) {
+		return new HttpGet(uri.toString());
 	}
 
 
@@ -190,10 +279,15 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 		String page = "";
 		int status = 0;
 		try {
-			GetMethod get = new GetMethod(url);
-			get.setDoAuthentication( true );
-			status = client.executeMethod(get); 
-			page = readFully(get.getResponseBodyAsStream());
+			HttpGet get = new HttpGet(url);
+			HttpResponse response = client.execute(target, get, localContext);
+			HttpEntity entity = response.getEntity();
+			if (entity != null) {
+				page = readFully(entity.getContent());
+			}
+			else {
+				System.out.println(readFully(entity.getContent()));
+			}
 		} catch(Exception e) {
 			e.printStackTrace();
 			failedPages.add(url);
@@ -234,14 +328,12 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 
 			/** Check it against the boundaries of the crawl. */
 			boolean within = false;
-			if (boundaries != null) {
 				for (String boundary : boundaries) {
 					if (entryUrl.startsWith(boundary) == true) {
 						within = true;
 						break;
 					}
 				}
-			}
 			if (within == false) {
 				ignoredPages.add(entryUrl);
 				continue;
@@ -277,9 +369,10 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 		Exchange exchange = getEndpoint().createExchange();
 
 		exchange.getIn().setBody(page);
-		exchange.getIn().setHeader("solr.field.title", title);
-		exchange.getIn().setHeader("solr.field.url", url);
-
+		exchange.getIn().setHeader(Fields.prefix + Fields.hasTitle, title);
+		exchange.getIn().setHeader(Fields.prefix + Fields.hasUri, url);
+		exchange.getIn().setHeader(Fields.prefix + Fields.ofMimeType, "text/html");
+		
 		getAsyncProcessor().process(exchange, new AsyncCallback() {
 			public void done(boolean doneSync) {
 				LOG.trace("Done processing URL");
