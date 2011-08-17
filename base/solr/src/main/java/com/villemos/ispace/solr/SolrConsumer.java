@@ -64,7 +64,7 @@ public class SolrConsumer extends ScheduledPollConsumer {
 	
 			/** Set all Solr document fields as headers. */
 			for (String name : doc.getFieldNames()) {
-				exchange.getIn().setHeader("ispace.field." + name, doc.getFirstValue(name));
+				exchange.getIn().setHeader("Fields.prefix." + name, doc.getFirstValue(name));
 			}
 			exchange.getIn().setBody(doc);
 				

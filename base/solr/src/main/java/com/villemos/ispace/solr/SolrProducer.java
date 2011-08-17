@@ -43,6 +43,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.villemos.ispace.fields.Fields;
+
 /**
  * The Solr producer.
  */
@@ -100,9 +102,10 @@ public class SolrProducer extends DefaultProducer {
 		/** 
 		 * Iterate through all headers. Each field with a name 'ispace.field.[name]' will
 		 * be extracted and set on the Solr document, i.e. stored in the repository. */
-		List<String> filteredHeader = filterHeaders(headers, "ispace.field."); 
+		List<String> filteredHeader = filterHeaders(headers, Fields.prefix);
+		
 		for (String field : filteredHeader) {
-			setFieldValue(document, field, headers.get("ispace.field." + field));
+			setFieldValue(document, field, headers.get(Fields.prefix + field));
 		} 
 
 		/** Make sure the document holds an ID. */
@@ -207,7 +210,13 @@ public class SolrProducer extends DefaultProducer {
 		 * a stream send to the callback object in the body. The exchange header field 
 		 * 'ispace.stream' is used to indicate whic delivery mode is used. */
 		if (exchange.getIn().getHeaders().containsKey("ispace.stream") == false) {
-			exchange.getOut().setBody(response.getResults());
+			
+			if (exchange.getIn().getHeaders().containsKey("ispace.count")) {
+				exchange.getOut().setBody((int) response.getResults().getNumFound());
+			} 
+			else {
+				exchange.getOut().setBody(response.getResults());
+			}
 		}
 		else {
 			/** Stream. */
@@ -219,7 +228,7 @@ public class SolrProducer extends DefaultProducer {
 			else {
 				ICallback callback = (ICallback) exchange.getIn().getBody();
 
-				final int numberOfHits = (int)response.getResults().getNumFound();
+				final int numberOfHits = (int) response.getResults().getNumFound();
 				final int rowsToFetch = query.getRows();
 				int index = 0;
 

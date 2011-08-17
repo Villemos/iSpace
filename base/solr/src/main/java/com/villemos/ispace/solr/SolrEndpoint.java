@@ -33,6 +33,8 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.villemos.ispace.fields.Fields;
+
 /**
  * The endpoint for production of solr producers. The endpoint does
  * not support consumers.
@@ -63,13 +65,13 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 	/** The url of the SOLR server. The URL must have the format:
 	 *    [protocol]://[host IP or DNS name]:[port]/[path to solr] 
 	 *  Default is http://localhost:8080/apache-solr-1.4.1 */
-	protected String solrServerUrl = null;
+	protected String solrServerUrl = "http://localhost:8080/apache-solr-3.3.0/";
 
 	/** The solr name of the field holding the content. */
-	protected String contentFieldName = "text";
+	protected String contentFieldName = Fields.withRawText;
 
 	/** The solr name of the field holding the unique ID (required by Solr). */
-	protected String uniqueidFieldName = "uri";
+	protected String uniqueidFieldName = Fields.hasUri;
 
 	/** Flag indicating whether the endpoint should automatically assign a unique ID to the entry, if not already set. */
 	protected boolean assignId = true;
