@@ -1,24 +1,11 @@
 package com.villemos.ispace.aperture;
 
-import java.io.File;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.camel.Body;
-import org.apache.camel.Handler;
-import org.apache.camel.Headers;
-
 import org.semanticdesktop.aperture.accessor.DataAccessorFactory;
 import org.semanticdesktop.aperture.accessor.DataObject;
 import org.semanticdesktop.aperture.accessor.RDFContainerFactory;
 import org.semanticdesktop.aperture.crawler.ExitCode;
 import org.semanticdesktop.aperture.crawler.base.CrawlerBase;
 import org.semanticdesktop.aperture.datasource.filesystem.FileSystemDataSource;
-
-import org.semanticdesktop.aperture.accessor.base.FileAccessData;
-import org.semanticdesktop.aperture.accessor.impl.DefaultDataAccessorRegistry;
-import org.semanticdesktop.aperture.rdf.RDFContainer;
-import org.semanticdesktop.aperture.rdf.impl.RDFContainerFactoryImpl;
 
 /**
  * A Crawler implementation for crawling file system sources modeled by a FileSystemDataSource.
@@ -68,14 +55,4 @@ public class ExtendedFileSystemCrawler extends CrawlerBase {
 		
 		return ExitCode.COMPLETED;
 	}
-
-//	private DataAccessorFactory getAccessorFactory() {
-//		Set<?> factories = accessorRegistry.get("file");
-//
-//		if (factories != null && !factories.isEmpty()) {
-//			accessorFactory = (DataAccessorFactory) factories.iterator().next();
-//		}
-//
-//		return accessorFactory;
-//	}
 }

@@ -6,16 +6,16 @@
     <version>1.0</version>
   </parent>
   <groupId>com.villemos.ispace</groupId>
-  <artifactId>documentcrawler</artifactId>
+  <artifactId>aperture</artifactId>
   <name>iSpace Documentcrawler - Processor</name>
   <version>0.1-SNAPSHOT</version>
   
   <dependencies>
   
   		<dependency>
-			<groupId>com.villemos.sdms</groupId>
+			<groupId>com.villemos.ispace</groupId>
 			<artifactId>core</artifactId>
-			<version>0.0.1-SNAPSHOT</version>  		
+			<version>0.1-SNAPSHOT</version>  		
   		</dependency>
   
   		<!-- See http://sourceforge.net/apps/trac/aperture/wiki/MavenDependency for details -->
@@ -75,11 +75,6 @@
       <scope>compile</scope>
     </dependency>
 
-	<dependency>
-      <groupId>com.villemos.ispace</groupId>
-      <artifactId>solr</artifactId>
-      <version>0.0.1-SNAPSHOT</version>	
-	</dependency>
 
   </dependencies>
 </project>

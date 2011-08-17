@@ -25,6 +25,8 @@ import org.apache.poi.hpsf.Section;
 import org.apache.poi.poifs.eventfilesystem.POIFSReaderListener;
 import org.apache.poi.util.HexDump;
 
+import com.villemos.ispace.fields.Fields;
+
 public class MicrosoftPropertyReader implements POIFSReaderListener {
 
 	private static org.apache.log4j.Logger Logger = org.apache.log4j.Logger.getLogger(MicrosoftPropertyReader.class);
@@ -44,7 +46,7 @@ public class MicrosoftPropertyReader implements POIFSReaderListener {
 			while (it.hasNext()) {
 				values.add(it.next().getValue());
 			}			
-			headers.put("iSpace.properties", values);
+			headers.put(Fields.prefix, values);
 			inStream.close();			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
