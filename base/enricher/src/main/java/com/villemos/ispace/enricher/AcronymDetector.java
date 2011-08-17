@@ -38,6 +38,8 @@ import org.apache.camel.Headers;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.impl.DefaultExchange;
 
+import com.villemos.ispace.fields.Fields;
+
 public class AcronymDetector {
 
 	/** Map of patterns. The key is the pattern itself. It will have a number of groups, of which one is the
@@ -91,11 +93,12 @@ public class AcronymDetector {
 				String acronym = matcher.group(entry.getValue().get(1));
 				
 				Exchange exchange = new DefaultExchange(context);
-				exchange.getIn().setHeader("ispace.field.uri", "ispace:/acronym/" + acronym + "/" + definition);
-				exchange.getIn().setHeader("ispace.field.title", definition + " (" + acronym + ")");
-				exchange.getIn().setHeader("ispace.field.text", "Extracted from " + headers.get("iSpace.hdUrl"));
-				exchange.getIn().setHeader("ispace.field.type", "Acronym");
-				exchange.getIn().setHeader("ispace.field.mime", "Virtual");
+				exchange.getIn().setHeader(Fields.prefix + Fields.hasUri, "ispace:/acronym/" + acronym + "/" + definition);
+				exchange.getIn().setHeader(Fields.prefix + Fields.hasTitle, definition + " (" + acronym + ")");
+				exchange.getIn().setHeader(Fields.prefix + Fields.withRawText, "Extracted from " + headers.get("iSpace.hdUrl"));
+				exchange.getIn().setHeader(Fields.prefix + Fields.ofDocumentType, "Acronym");
+				exchange.getIn().setHeader(Fields.prefix + Fields.ofMimeType, "Virtual");
+				exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
 				
 				/** Send it to the storage route. */
 				context.createProducerTemplate().send("direct:store", exchange);

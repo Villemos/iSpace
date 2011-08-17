@@ -8,6 +8,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Headers;
 import org.apache.camel.impl.DefaultExchange;
 
+import com.villemos.ispace.fields.Fields;
+
 public class SynonymBuffer {
 	
 	protected Map<String, String> acceptedSynonyms = new HashMap<String, String>();
@@ -22,14 +24,15 @@ public class SynonymBuffer {
 	public void registerNewSynonym(Object element, CamelContext context) {
 		Exchange exchange = new DefaultExchange(context);
 		
-		exchange.getIn().setHeader("ispace.field.title", "Synonym: " + element);
-		exchange.getIn().setHeader("ispace.field.uri", "virtual:/synomym/" + element + "/" + element);
-		exchange.getIn().setHeader("ispace.field.mime", "virtual");
-		exchange.getIn().setHeader("ispace.field.type", "synonym");
-		exchange.getIn().setHeader("ispace.field.state", "candidate");
-		exchange.getIn().setHeader("ispace.field.text", element);
-		exchange.getIn().setHeader("ispace.field.root", element);
-		exchange.getIn().setHeader("ispace.field.log", "Candidate synonym detected.");
+		exchange.getIn().setHeader(Fields.prefix + Fields.hasTitle, "Synonym: " + element);
+		exchange.getIn().setHeader(Fields.prefix + Fields.hasUri, "virtual:/synomym/" + element + "/" + element);
+		exchange.getIn().setHeader(Fields.prefix + Fields.ofMimeType, "virtual");
+		exchange.getIn().setHeader(Fields.prefix + Fields.ofDocumentType, "synonym");
+		exchange.getIn().setHeader(Fields.prefix + Fields.hasState, "candidate");
+		exchange.getIn().setHeader(Fields.prefix + Fields.withRawText, element);
+		exchange.getIn().setHeader(Fields.prefix + Fields.hasRootValue, element);
+		exchange.getIn().setHeader(Fields.prefix + Fields.withAttachedLog, "Candidate synonym detected.");
+		exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
 		
 		registerSynonym(exchange.getIn().getHeaders());
 		
@@ -37,14 +40,14 @@ public class SynonymBuffer {
 	}
 	
 	public synchronized void registerSynonym(@Headers Map<String, Object> headers) {
-		if (headers.get("ispace.field.state").equals("accepted")) {
-			acceptedSynonyms.put((String) headers.get("ispace.field.text"), (String) headers.get("ispace.field.root"));
+		if (headers.get(Fields.prefix + Fields.hasState).equals("accepted")) {
+			acceptedSynonyms.put((String) headers.get(Fields.prefix + Fields.withRawText), (String) headers.get(Fields.prefix + Fields.hasRootValue));
 		}
-		else if (headers.get("ispace.field.state").equals("remove")) {
-			removeSynonyms.put((String) headers.get("ispace.field.text"), (String) headers.get("ispace.field.root"));
+		else if (headers.get(Fields.prefix + Fields.hasState).equals("remove")) {
+			removeSynonyms.put((String) headers.get(Fields.prefix + Fields.withRawText), (String) headers.get(Fields.prefix + Fields.hasRootValue));
 		}
 		else {
-			knownSynonyms.put((String) headers.get("ispace.field.text"), (String) headers.get("ispace.field.root"));
+			knownSynonyms.put((String) headers.get(Fields.prefix + Fields.withRawText), (String) headers.get(Fields.prefix + Fields.hasRootValue));
 		}
 	}
 }

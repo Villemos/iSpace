@@ -35,5 +35,10 @@
 			<version>1.5.8</version>
 		</dependency>		
 
+		<dependency>
+			<groupId>com.villemos.ispace</groupId>
+			<artifactId>core</artifactId>
+			<version>0.1-SNAPSHOT</version>
+		</dependency>
   </dependencies>
 </project>

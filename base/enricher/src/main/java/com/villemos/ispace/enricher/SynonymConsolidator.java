@@ -8,6 +8,8 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
+import com.villemos.ispace.fields.Fields;
+
 public class SynonymConsolidator extends SynonymBuffer {
 
 	/** List of fields which are discrete and should be consolidated. */
@@ -20,12 +22,12 @@ public class SynonymConsolidator extends SynonymBuffer {
 		for (String field : discreteFields) {
 
 			/** If field doesnt exist, then continue. */
-			if (headers.containsKey("ispace.field." + field) == false) {
+			if (headers.containsKey(Fields.prefix + field) == false) {
 				continue;
 			}
 			
 			/** Get the value. */
-			Object value = headers.get("ispace.field." + field);
+			Object value = headers.get(Fields.prefix + field);
 			if (value == null) {
 				continue;
 			}
@@ -40,7 +42,7 @@ public class SynonymConsolidator extends SynonymBuffer {
 						}
 						else if (removeSynonyms.containsKey(element)) {
 							/** Synonym known to be false. Remove. */
-							// headers.put("ispace.field." + field, null);
+							// headers.put(Fields.prefix + field, null);
 						}
 						else {
 							/** New synonym. Register. */
@@ -53,11 +55,11 @@ public class SynonymConsolidator extends SynonymBuffer {
 				if (value instanceof String) {
 					if (acceptedSynonyms.containsKey(value)) {
 						/** Known synonym. Replace. */
-						headers.put("ispace.field." + field, acceptedSynonyms.get(value));
+						headers.put(Fields.prefix + field, acceptedSynonyms.get(value));
 					}
 					else if (removeSynonyms.containsKey(value)) {
 						/** Synonym known to be false. Remove. */
-						headers.put("ispace.field." + field, null);
+						headers.put(Fields.prefix + field, null);
 					}
 					else if (knownSynonyms.containsKey(value) == false) {
 						/** New synonym. Register. */

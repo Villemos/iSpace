@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
+import com.villemos.ispace.fields.Fields;
+
 public class PatternBasedEnricher {
 
 	protected String headerFieldName;
@@ -28,7 +30,7 @@ public class PatternBasedEnricher {
 					Entry<Integer, String> entry = it.next();
 					
 					if (matcher.groupCount() >= entry.getKey()) {
-						headers.put("ispace.field." + entry.getValue(), matcher.group(entry.getKey()));
+						headers.put(Fields.prefix + entry.getValue(), matcher.group(entry.getKey()));
 					}
 				}
 			}
@@ -40,7 +42,7 @@ public class PatternBasedEnricher {
 	}
 
 	public void setHeaderFieldName(String headerFieldName) {
-		this.headerFieldName = "ispace.field." + headerFieldName;
+		this.headerFieldName = Fields.prefix + headerFieldName;
 	}
 
 	public String getPattern() {
