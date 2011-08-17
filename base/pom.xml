@@ -13,6 +13,8 @@
   	<module>httpcrawler</module>
   	<module>consolidator</module>
   	<module>solr</module>
+  	<module>webster</module>
+  	<module>configuration</module>
   </modules>
   
   	<properties>
@@ -113,7 +115,7 @@
 				<artifactId>camel-spring</artifactId>
 				<version>${camel.version}</version>
 			</dependency>
-			
+
 			<dependency>
 				<groupId>org.apache.camel</groupId>
 				<artifactId>camel-jms</artifactId>
@@ -168,7 +170,7 @@
 		      <artifactId>slf4j-log4j12</artifactId>
 		      <version>${slf4j.version}</version>
 		    </dependency>
-		
+
 		</dependencies>
 	</dependencyManagement>
 
