@@ -25,7 +25,7 @@ import org.apache.poi.hpsf.Section;
 import org.apache.poi.poifs.eventfilesystem.POIFSReaderListener;
 import org.apache.poi.util.HexDump;
 
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 public class MicrosoftPropertyReader implements POIFSReaderListener {
 

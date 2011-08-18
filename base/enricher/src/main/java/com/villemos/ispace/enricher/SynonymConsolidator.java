@@ -8,7 +8,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 public class SynonymConsolidator extends SynonymBuffer {
 

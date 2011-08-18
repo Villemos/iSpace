@@ -43,7 +43,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 /**
  * The Solr producer.

@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 /** Class for adding a number of fixed fields to the document. The fixed fields
  * are configured as part of the system setup. Typically this should be used to

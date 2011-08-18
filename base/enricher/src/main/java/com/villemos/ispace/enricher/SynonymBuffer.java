@@ -8,7 +8,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Headers;
 import org.apache.camel.impl.DefaultExchange;
 
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 public class SynonymBuffer {
 	

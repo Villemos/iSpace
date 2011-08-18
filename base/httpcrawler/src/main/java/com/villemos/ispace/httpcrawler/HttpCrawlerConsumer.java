@@ -57,7 +57,7 @@ import org.apache.http.protocol.HttpContext;
 
 import com.sun.java.browser.net.ProxyInfo;
 import com.sun.java.browser.net.ProxyService;
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 
 public class HttpCrawlerConsumer extends ScheduledPollConsumer {

@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.fields.Fields;
+import com.villemos.ispace.Fields;
 
 public class PatternBasedEnricher {
 

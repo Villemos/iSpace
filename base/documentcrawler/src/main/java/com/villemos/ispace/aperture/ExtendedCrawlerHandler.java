@@ -45,8 +45,8 @@ import org.semanticdesktop.aperture.subcrawler.SubCrawlerFactory;
 import org.semanticdesktop.aperture.subcrawler.SubCrawlerRegistry;
 import org.semanticdesktop.aperture.subcrawler.impl.DefaultSubCrawlerRegistry;
 
+import com.villemos.ispace.Fields;
 import com.villemos.ispace.aperture.processor.IProcessor;
-import com.villemos.ispace.fields.Fields;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
