@@ -376,7 +376,7 @@
      <str name="echoParams">explicit</str>
      <float name="tie">0.01</float>
 
-     <str name="qf">text title^2 titleText^2 root</str>
+     <str name="qf">withRawText hasTitle^4 hasTitleText^2 hasReferenceIdText^2 spell</str>
 
      <!--  str name="bf"></str -->
 

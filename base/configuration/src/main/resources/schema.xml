@@ -74,6 +74,7 @@
         -->
     <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
 
+
       <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
 	
@@ -145,11 +146,13 @@
    <field name="wasStoredAt" type="date" indexed="true" stored="true" default="NOW" multiValued="false" required="true" omitNorms="true"/>
    <field name="isAttachedTo" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>   
    <field name="fromSource" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <field name="fromSourceText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="ofMimeType" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="isEntityType" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="hasTitle" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <field name="hasTitle" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="hasTitleText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="withReferenceId" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <field name="withReferenceIdText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="withIssue" type="slong" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="withRevision" type="slong" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
    <field name="isPartOf" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>   
@@ -172,13 +175,18 @@
 <!-- Copy fields used for search optimization. -->
 <copyField source="hasTitle" dest="hasTitleText"/>
 <copyField source="hasTitle" dest="spell"/>
+<copyField source="hasTitleText" dest="spell"/>
 <copyField source="ofMimeType" dest="spell"/>
 <copyField source="isEntityType" dest="spell"/>
 <copyField source="hasState" dest="spell"/>
 <copyField source="withRawText" dest="spell"/>
 <copyField source="hasRootValue" dest="spell"/>
+<copyField source="fromSource" dest="fromSourceText"/>
 <copyField source="fromSource" dest="spell"/>
+<copyField source="fromSourceText" dest="spell"/>
+<copyField source="withReferenceId" dest="withReferenceIdText"/>
 <copyField source="withReferenceId" dest="spell"/>
+<copyField source="withReferenceIdText" dest="spell"/>
 
 <!-- Tailoring. Add new copy fields here! -->
 
