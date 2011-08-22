@@ -22,38 +22,16 @@
  */
 package com.villemos.ispace.core.io;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author villemosg
  *
  */
-public abstract class InformationObject {
+public class InformationObject {
 
-	/** The type of the entry. Used to map from Solr entry to Java objects. */
-	public String isOfType;
+	public Map<String, Object> values = new HashMap<String, Object>();
 	
-	/** Unique identifier of the object. May be a logical reference or a URL. */
-	public String hasUri;
-	
-	/** The time the entry was last stored.*/
-	public Long hasTimestamp;
-	
-	/** A log of updates to this entry. */
-	public List<String> hasLog = new ArrayList<String>();
-
-	/** The name/title of this entry. */
-	public String hasName;
-
-	/** The following attribute ensures that any information object can be 
-	 * part of a taxonomy, i.e. instances can be ordered hierarchical. The hierarchy
-	 * is defined by each element 'pointing' to its parent. */
-	
-	/** The name of the parent taxonomy entry. */
-	public String hasParent;
-	
-
-	/** Per default the IO's text field will hold the description of the entry. */
-	public String hasText;
+	public long score = 0;
 }

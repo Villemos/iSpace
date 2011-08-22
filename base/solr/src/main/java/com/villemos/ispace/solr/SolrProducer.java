@@ -36,6 +36,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.FacetField;
+import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -44,6 +46,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.villemos.ispace.Fields;
+import com.villemos.ispace.core.io.Facet;
+import com.villemos.ispace.core.io.InformationObject;
+import com.villemos.ispace.core.io.ResultSet;
+import com.villemos.ispace.core.search.ICallback;
 
 /**
  * The Solr producer.
@@ -71,11 +77,8 @@ public class SolrProducer extends DefaultProducer {
 		 * interpreted as a request for data, or it contains a facetquery 
 		 * header field in which case it is interpreted as a facet retrieval
 		 * request, or (fall through) it is interpreted as a insert request. */
-		if (exchange.getIn().getHeaders().containsKey("ispace.query")) {
+		if (exchange.getIn().getHeaders().containsKey(Fields.query) && exchange.getIn().getHeaders().get(Fields.query) != null) {
 			retrieveEntries(exchange);
-		}
-		else if (exchange.getIn().getHeaders().containsKey("ispace.facetquery")) {
-			retrieveFacets(exchange);
 		}
 		else {
 			insert(exchange);
@@ -103,7 +106,7 @@ public class SolrProducer extends DefaultProducer {
 		 * Iterate through all headers. Each field with a name 'ispace.field.[name]' will
 		 * be extracted and set on the Solr document, i.e. stored in the repository. */
 		List<String> filteredHeader = filterHeaders(headers, Fields.prefix);
-		
+
 		for (String field : filteredHeader) {
 			setFieldValue(document, field, headers.get(Fields.prefix + field));
 		} 
@@ -194,10 +197,21 @@ public class SolrProducer extends DefaultProducer {
 		 *   NOW. Will be replaced with a long value of the current time. 
 		 *   FROMLAST. Will be replaced with the timestamp of the last retrieval (initial is 0). 
 		 */	
-		String queryString = ((String)exchange.getIn().getHeaders().get("ispace.query")).trim();
+		String queryString = ((String)exchange.getIn().getHeaders().get(Fields.query)).trim();
 		queryString = queryString.replaceAll("NOW", Long.toString((new Date()).getTime())).replaceAll("FROMLAST", Long.toString(lastRetrievalTime));
 		SolrQuery query = new SolrQuery(queryString);
 		configureQuery(query, exchange);
+
+		/** If we are asked for facets, then add the facets. */
+		if (exchange.getIn().getHeader(Fields.facetquery) != null) {
+			query.setFacet(true);
+			query.addFacetField(Fields.ofMimeType);
+			query.addFacetField(Fields.fromSource);
+			query.addFacetField(Fields.ofDocumentType);
+			query.addFacetField(Fields.withReferenceId);
+			query.addFacetField(Fields.withIssue);
+			query.addFacetField(Fields.withRevision);
+		}
 
 		/** Search and set result set. Notice that this will return the results upto the 
 		 * configured number of rows. More results may thus be in the repository. */
@@ -209,60 +223,44 @@ public class SolrProducer extends DefaultProducer {
 		/** Data is either returned as a batch contained in the body of the exchange, or as
 		 * a stream send to the callback object in the body. The exchange header field 
 		 * 'ispace.stream' is used to indicate whic delivery mode is used. */
-		if (exchange.getIn().getHeaders().containsKey("ispace.stream") == false) {
-			
-			if (exchange.getIn().getHeaders().containsKey("ispace.count")) {
+		if (exchange.getIn().getHeaders().containsKey(Fields.stream) == false || exchange.getIn().getHeaders().get(Fields.stream) == null) {
+
+			if (exchange.getIn().getHeaders().containsKey(Fields.count)) {
 				exchange.getOut().setBody((int) response.getResults().getNumFound());
 			} 
 			else {
-				exchange.getOut().setBody(response.getResults());
+				exchange.getOut().setBody(getResultSet(response));
 			}
 		}
 		else {
 			/** Stream. */
+			ICallback callback = (ICallback) exchange.getIn().getHeader(Fields.stream);
 
-			/** The body must contain a callback object. Else we fail. */
-			if (exchange.getIn().getBody() == null || exchange.getIn().getBody() instanceof ICallback) {
-				log.error("No callback object (object implementing 'ICallback') registered in exchange body. Cannot stream data. Use 'exchange.getIn().setBody(new MyCallbackHandler())' to ");
-			}
-			else {
-				ICallback callback = (ICallback) exchange.getIn().getBody();
+			final int numberOfHits = (int) response.getResults().getNumFound();
+			final int rowsToFetch = query.getRows();
+			int index = 0;
 
-				final int numberOfHits = (int) response.getResults().getNumFound();
-				final int rowsToFetch = query.getRows();
-				int index = 0;
+			ResultSet set = getResultSet(response);
 
-				do {
-					for(SolrDocument document : response.getResults()){
-						callback.receive(document);
-					}
-					index += rowsToFetch;				
+			do {
+				for(InformationObject document : set.informationobjects){
+					callback.receive(document);
+				}
+				for(Facet facet : set.facets){
+					callback.receive(facet);
+				}
+				index += rowsToFetch;				
 
-					if (numberOfHits > index) {
-						query.setStart(index);
-						query.setRows(rowsToFetch);
-						response = endpoint.getServer().query(query);
-					}
-					else {
-						break;
-					}
-				} while (true);
-			}
+				if (numberOfHits > index) {
+					query.setStart(index);
+					query.setRows(rowsToFetch);
+					response = endpoint.getServer().query(query);
+				}
+				else {
+					break;
+				}
+			} while (true);
 		}
-	}
-
-
-	protected void retrieveFacets(Exchange exchange) throws SolrServerException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-		/** Configure the request. */
-		SolrQuery query = new SolrQuery(((String)exchange.getIn().getHeaders().get("ispace.facetquery")).trim());
-		query.setFacet(true);
-		configureQuery(query, exchange);
-
-		QueryResponse response = endpoint.getServer().query(query);
-		if (response.getStatus() != 0) {
-			log.error("Failed to execute retrieval request. Failed with status '" + response.getStatus() + "'.");
-		}
-		exchange.getOut().setBody(response.getFacetFields());		
 	}
 
 
@@ -308,5 +306,32 @@ public class SolrProducer extends DefaultProducer {
 				}					
 			}
 		}
+	}
+
+	protected ResultSet getResultSet(QueryResponse response) {
+		ResultSet set = new ResultSet();
+		set.informationobjects = new ArrayList<InformationObject>();
+		for (SolrDocument document : response.getResults()) {
+			InformationObject io = new InformationObject();
+			for (String field : document.getFieldNames()) {
+				io.values.put(field, document.getFieldValue(field));
+			}
+			set.informationobjects.add(io);
+		}
+
+		set.facets = new ArrayList<Facet>();
+		for (FacetField facetfield :  response.getFacetFields()) {
+			Facet facet = new Facet();
+			facet.field = facetfield.getName();
+
+			if (facetfield.getValues() != null) {
+				for (Count count : facetfield.getValues()) {
+					facet.values.put(count.getName(), count.getCount());
+				}
+			}
+			set.facets.add(facet);
+		}
+
+		return set;
 	}
 }

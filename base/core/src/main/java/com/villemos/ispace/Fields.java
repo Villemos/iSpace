@@ -1,8 +1,22 @@
 package com.villemos.ispace;
 
 
+
 public class Fields {
 
+	/** Header field indicating that this query is a 'normal' query. */
+	public static final String query = "ispace.query";
+
+	/** Header field indicating that this query is a 'facet' query. */
+	public static final String facetquery = "ispace.facetquery";
+
+	/** Header field indicating that the results shouild be streamed back. The field value must be a ICallback object. */
+	public static final String stream = "ispace.stream";
+	
+	/** Flag indicating that only the count should be returned. */
+	public static final String count = "ispace.count";
+	
+	
 	public static final String prefix = "ispace.field.";
 	
 	public static final String hasUri = "hasUri";

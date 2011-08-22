@@ -24,7 +24,6 @@ package com.villemos.ispace.core.search;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.camel.Body;
 import org.apache.camel.Handler;
