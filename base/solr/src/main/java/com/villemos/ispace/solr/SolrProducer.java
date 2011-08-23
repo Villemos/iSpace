@@ -215,15 +215,16 @@ public class SolrProducer extends DefaultProducer {
 
 		/** Search and set result set. Notice that this will return the results upto the 
 		 * configured number of rows. More results may thus be in the repository. */
-		QueryResponse response = endpoint.getServer().query(query);
-		if (response.getStatus() != 0) {
-			log.error("Failed to execute retrieval request. Failed with status '" + response.getStatus() + "'.");
-		}
 
 		/** Data is either returned as a batch contained in the body of the exchange, or as
 		 * a stream send to the callback object in the body. The exchange header field 
-		 * 'ispace.stream' is used to indicate whic delivery mode is used. */
+		 * 'ispace.stream' is used to indicate which delivery mode is used. */
 		if (exchange.getIn().getHeaders().containsKey(Fields.stream) == false || exchange.getIn().getHeaders().get(Fields.stream) == null) {
+
+			QueryResponse response = endpoint.getServer().query(query);
+			if (response.getStatus() != 0) {
+				log.error("Failed to execute retrieval request. Failed with status '" + response.getStatus() + "'.");
+			}
 
 			if (exchange.getIn().getHeaders().containsKey(Fields.count)) {
 				exchange.getOut().setBody((int) response.getResults().getNumFound());
@@ -236,24 +237,41 @@ public class SolrProducer extends DefaultProducer {
 			/** Stream. */
 			ICallback callback = (ICallback) exchange.getIn().getHeader(Fields.stream);
 
-			final int numberOfHits = (int) response.getResults().getNumFound();
-			final int rowsToFetch = query.getRows();
-			int index = 0;
+			int maxNumberOfHits = query.getRows();
 
-			ResultSet set = getResultSet(response);
+			/** When streaming, we retrieve in chunks. */
+			int streamBatchSize = 10;
+			query.setRows(streamBatchSize);
+			int index = query.getStart();
 
-			do {
+			QueryResponse response = endpoint.getServer().query(query);
+			if (response.getStatus() != 0) {
+				log.error("Failed to execute retrieval request. Failed with status '" + response.getStatus() + "'.");
+			}
+
+			int numberOfHits = (int) response.getResults().getNumFound();
+			if (numberOfHits > maxNumberOfHits) {
+				numberOfHits = maxNumberOfHits;
+			}
+
+			boolean hasDeliveredFacets = false;
+
+			do {				
+				ResultSet set = getResultSet(response);
+
 				for(InformationObject document : set.informationobjects){
 					callback.receive(document);
 				}
-				for(Facet facet : set.facets){
-					callback.receive(facet);
+				if (hasDeliveredFacets == false) {
+					for(Facet facet : set.facets){
+						callback.receive(facet);
+					}
+					hasDeliveredFacets = true;
 				}
-				index += rowsToFetch;				
+				index += streamBatchSize;				
 
 				if (numberOfHits > index) {
 					query.setStart(index);
-					query.setRows(rowsToFetch);
 					response = endpoint.getServer().query(query);
 				}
 				else {
@@ -266,6 +284,10 @@ public class SolrProducer extends DefaultProducer {
 
 	private void configureQuery(SolrQuery query, Exchange exchange) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 		query.setRows(1000);
+
+		/** We per default always set highlighting. */
+		query.setHighlight(true).setHighlightSnippets(1);
+		query.setParam("hl.fl", Fields.withRawText);
 
 		/** The header of the exchange can be used to set query options. */
 		Map<String, Object> headers = exchange.getIn().getHeaders();
@@ -317,6 +339,11 @@ public class SolrProducer extends DefaultProducer {
 				io.values.put(field, document.getFieldValue(field));
 			}
 			set.informationobjects.add(io);
+
+			String uniqueId = (String) io.values.get(Fields.hasUri);
+			if (response.getHighlighting().get(uniqueId) != null) {
+				io.highlight = response.getHighlighting().get(uniqueId).get(Fields.withRawText);
+			}
 		}
 
 		set.facets = new ArrayList<Facet>();

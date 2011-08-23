@@ -49,14 +49,11 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.ProxySelectorRoutePlanner;
 import org.apache.http.impl.conn.SingleClientConnManager;
 import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 
-import com.sun.java.browser.net.ProxyInfo;
-import com.sun.java.browser.net.ProxyService;
 import com.villemos.ispace.Fields;
 
 
@@ -193,7 +190,7 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 
 			/** Read the response fully, to clear it. */
 			HttpEntity entity = response.getEntity();
-			readFully(entity.getContent());
+			HttpClientConfigurer.readFully(entity.getContent());
 			
 			response = client.execute(target, get, localContext);
 			processSite(uri, response);
@@ -202,7 +199,7 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 		else {
 			HttpEntity entity = response.getEntity();
 			InputStream instream = entity.getContent();
-			System.out.println(readFully(instream));
+			System.out.println(HttpClientConfigurer.readFully(instream));
 		}
 
 		return 0;
@@ -221,7 +218,7 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 	protected void processSite(URI uri, HttpResponse response) throws IOException {
 
 		/** read the complete page. */
-		String page = readFully(response.getEntity().getContent());
+		String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
 
 		/** Detect URLs */
 		detectUrls(page);
@@ -258,20 +255,6 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 	}
 
 
-	public static String readFully(InputStream input) throws IOException {
-
-		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
-		StringBuffer result = new StringBuffer();
-		char[] buffer = new char[4 * 1024];
-		int charsRead;
-		while ((charsRead = bufferedReader.read(buffer)) != -1) {
-			result.append(buffer, 0, charsRead);
-		}
-		input.close();
-		bufferedReader.close();
-
-		return result.toString();
-	}
 
 
 	public void processUrl(String url) {
@@ -283,10 +266,10 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 			HttpResponse response = client.execute(target, get, localContext);
 			HttpEntity entity = response.getEntity();
 			if (entity != null) {
-				page = readFully(entity.getContent());
+				page = HttpClientConfigurer.readFully(entity.getContent());
 			}
 			else {
-				System.out.println(readFully(entity.getContent()));
+				System.out.println(HttpClientConfigurer.readFully(entity.getContent()));
 			}
 		} catch(Exception e) {
 			e.printStackTrace();

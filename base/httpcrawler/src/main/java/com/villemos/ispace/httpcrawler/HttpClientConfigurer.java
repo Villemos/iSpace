@@ -1,5 +1,9 @@
 package com.villemos.ispace.httpcrawler;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.ProxySelector;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -88,5 +92,20 @@ public class HttpClientConfigurer {
 		client.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BEST_MATCH);
 
 		return client;
+	}
+	
+	public static String readFully(InputStream input) throws IOException {
+
+		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));
+		StringBuffer result = new StringBuffer();
+		char[] buffer = new char[4 * 1024];
+		int charsRead;
+		while ((charsRead = bufferedReader.read(buffer)) != -1) {
+			result.append(buffer, 0, charsRead);
+		}
+		input.close();
+		bufferedReader.close();
+
+		return result.toString();
 	}
 }

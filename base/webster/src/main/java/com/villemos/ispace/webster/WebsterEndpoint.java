@@ -32,7 +32,7 @@ public class WebsterEndpoint extends HttpCrawlerEndpoint {
     }
 
     public Producer createProducer() throws Exception {
-        return new WebsterProducer(this);
+    	return new WebsterProducer(this);
     }
 
     public Consumer createConsumer(Processor processor) throws Exception {
