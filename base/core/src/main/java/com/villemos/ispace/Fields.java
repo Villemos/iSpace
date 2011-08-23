@@ -16,6 +16,10 @@ public class Fields {
 	/** Flag indicating that only the count should be returned. */
 	public static final String count = "ispace.count";
 	
+	/** The offset of the retrieval. Can be used to retrieve 'pages' of data, i.e. first 10 results (offset=0), then 10 more (offset=10), then 10 more (offset=20), etc. */
+	public static final String offset = "ispace.option.start";
+	
+	public static final String rows = "ispace.option.rows";
 	
 	public static final String prefix = "ispace.field.";
 	

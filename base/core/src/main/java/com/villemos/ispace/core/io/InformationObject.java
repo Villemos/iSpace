@@ -22,7 +22,9 @@
  */
 package com.villemos.ispace.core.io;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,6 +34,8 @@ import java.util.Map;
 public class InformationObject {
 
 	public Map<String, Object> values = new HashMap<String, Object>();
+	
+	public List<String> highlight = new ArrayList<String>();
 	
 	public long score = 0;
 }
