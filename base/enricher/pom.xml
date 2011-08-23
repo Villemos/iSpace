@@ -1,44 +1,79 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <artifactId>base</artifactId>
-    <groupId>com.villemos.ispace</groupId>
-    <version>1.0</version>
-  </parent>
-  <groupId>com.villemos.ispace</groupId>
-  <artifactId>enricher</artifactId>
-  <name>iSpace Enricher - Pipeline</name>
-  <version>0.1-SNAPSHOT</version>
-  
-  <dependencies>
-  	<dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-		
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <scope>compile</scope>
-    </dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>base</artifactId>
+		<groupId>com.villemos.ispace</groupId>
+		<version>1.0</version>
+	</parent>
+	<groupId>com.villemos.ispace</groupId>
+	<artifactId>enricher</artifactId>
+	<name>iSpace Enricher - Pipeline</name>
+	<version>0.1-SNAPSHOT</version>
+
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+			<distribution>repo, manual</distribution>
+			<comments>iSpace is distributed under a friendly OSS license.</comments>
+		</license>
+	</licenses>
+
+	<repositories>
+
+		<!-- Repository for the dependencies on other iSpace components. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+
+		<!-- Repository dependency for Apache Camel. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>mvnrepository</id>
+			<name>mvnrepository</name>
+			<url>http://mvnrepository.com/</url>
+		</repository>
+
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-core</artifactId>
+			<scope>compile</scope>
+		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.5.8</version>
+			<!-- <version>1.5.8</version> -->
 		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-jdk14</artifactId>
-			<version>1.5.8</version>
-		</dependency>		
+			<!-- <version>1.5.8</version> -->
+		</dependency>
 
 		<dependency>
 			<groupId>com.villemos.ispace</groupId>
 			<artifactId>core</artifactId>
 			<version>0.1-SNAPSHOT</version>
 		</dependency>
-  </dependencies>
+	</dependencies>
+
 </project>

@@ -10,6 +10,7 @@
   <version>0.1-SNAPSHOT</version>
   
     <dependencies>
+    
       <dependency>
       <groupId>com.villemos.ispace</groupId>
       <artifactId>core</artifactId>

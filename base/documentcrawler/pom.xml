@@ -1,48 +1,90 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-  	<artifactId>base</artifactId>
-  	<groupId>com.villemos.ispace</groupId>
-    <version>1.0</version>
-  </parent>
-  <groupId>com.villemos.ispace</groupId>
-  <artifactId>aperture</artifactId>
-  <name>iSpace Documentcrawler - Processor</name>
-  <version>0.1-SNAPSHOT</version>
-  
-  <dependencies>
-  
-  		<dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>base</artifactId>
+		<groupId>com.villemos.ispace</groupId>
+		<version>1.0</version>
+	</parent>
+	<groupId>com.villemos.ispace</groupId>
+	<artifactId>aperture</artifactId>
+	<name>iSpace Documentcrawler - Processor</name>
+	<version>0.1-SNAPSHOT</version>
+
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+			<distribution>repo, manual</distribution>
+			<comments>iSpace is distributed under a friendly OSS license.</comments>
+		</license>
+	</licenses>
+
+	<repositories>
+
+		<!-- Repository for the dependencies on other iSpace components. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+
+		<!-- Repository for the dependencies on Aperture. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>aperture</id>
+			<name>aperture</name>
+			<url>http://aperture.sourceforge.net/maven/</url>
+		</repository>
+
+		<!-- Repository for the dependencies on Semantic desktop. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>semanticweb</id>
+			<name>semanticweb</name>
+			<url>http://mavenrepo.fzi.de/semweb4j.org/repo/</url>
+		</repository>
+
+		<!-- Repository for the dependencies on Modularity. -->
+		<repository>
+			<id>modularity.net</id>
+			<name>modularity.net</name>
+			<url>http://m2.modularity.net.au/snapshots</url>
+		</repository>
+
+	</repositories>
+
+	<dependencies>
+
+		<dependency>
 			<groupId>com.villemos.ispace</groupId>
 			<artifactId>core</artifactId>
-			<version>0.1-SNAPSHOT</version>  		
-  		</dependency>
-  
-  		<!-- See http://sourceforge.net/apps/trac/aperture/wiki/MavenDependency for details -->
-		<dependency>
-	  	 	<groupId>org.semanticdesktop.aperture</groupId>
-  	  		<artifactId>aperture-core</artifactId>
-  	  		<version>1.5.0</version>
-  		</dependency>
+			<version>0.1-SNAPSHOT</version>
+		</dependency>
 
-  		<dependency>
-  	  		<groupId>org.semanticdesktop.aperture</groupId>
-  	  		<artifactId>aperture-runtime-optional</artifactId>
-  	  		<version>1.5.0</version>
-  	  		<type>pom</type>
-  		</dependency>  	
-  	
-  	
-<!--		<dependency>-->
-<!--			<groupId>org.slf4j</groupId>-->
-<!--			<artifactId>slf4j-log4j12</artifactId>-->
-<!--			<version>1.5.5</version>-->
-<!--		</dependency>-->
+		<!-- See http://sourceforge.net/apps/trac/aperture/wiki/MavenDependency 
+			for details -->
+		<dependency>
+			<groupId>org.semanticdesktop.aperture</groupId>
+			<artifactId>aperture-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.semanticdesktop.aperture</groupId>
+			<artifactId>aperture-runtime-optional</artifactId>
+			<type>pom</type>
+		</dependency>
 
 		<dependency>
 			<groupId>org.semweb4j</groupId>
 			<artifactId>rdf2go.impl.jena24</artifactId>
-			<version>4.7.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.semweb4j</groupId>
@@ -54,27 +96,25 @@
 		<dependency>
 			<groupId>com.hp.hpl.jena</groupId>
 			<artifactId>iri</artifactId>
-			<version>0.5</version>
 		</dependency>
 
-		    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-		
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <scope>compile</scope>
-    </dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-spring</artifactId>
-      <scope>compile</scope>
-    </dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-core</artifactId>
+			<scope>compile</scope>
+		</dependency>
 
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-spring</artifactId>
+			<scope>compile</scope>
+		</dependency>
 
-  </dependencies>
+	</dependencies>
 </project>

@@ -1,87 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    (the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
--->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<artifactId>base</artifactId>
 		<groupId>com.villemos.ispace</groupId>
 		<version>1.0</version>
 	</parent>
-	<modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.villemos.ispace</groupId>
-  <artifactId>httpcrawler</artifactId>
-  <packaging>jar</packaging>
-  <version>0.1-SNAPSHOT</version>
+	<groupId>com.villemos.ispace</groupId>
+	<artifactId>httpcrawler</artifactId>
+	<packaging>jar</packaging>
+	<version>0.1-SNAPSHOT</version>
+	<name>iSpace HttpCrawler - Component</name>
 
-  <name>iSpace HttpCrawler - Component</name>
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+			<distribution>repo, manual</distribution>
+			<comments>iSpace is distributed under a friendly OSS license.</comments>
+		</license>
+	</licenses>
 
-  <properties>
-    <camel-version>1.4.0</camel-version>
-  </properties>
+	<repositories>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <version>2.7.2</version>
-    </dependency>  
-  	<dependency>
+		<!-- Repository for the dependencies on other iSpace components. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+
+		<!-- Repository dependency for Jxl. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>mvnrepository</id>
+			<name>mvnrepository</name>
+			<url>http://mvnrepository.com/</url>
+		</repository>
+
+	</repositories>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-core</artifactId>
+		</dependency>
+
+		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
-			<version>4.1.1</version>
-  	</dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-test</artifactId>
-      <version>2.7.2</version>      
-      <scope>test</scope>
-    </dependency>
-
-	<dependency>
-			<groupId>org.apache.solr</groupId>
-			<artifactId>solr-core</artifactId>
-			<version>3.3.0</version>
 		</dependency>
-    
-	<dependency>
-		<groupId>com.villemos.ispace</groupId>
-		<artifactId>core</artifactId>
-		<version>0.1-SNAPSHOT</version>
-	</dependency>
-  </dependencies>
 
-  <build>
-    <defaultGoal>install</defaultGoal>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-        </configuration>
-      </plugin>
-      
-    </plugins>
-  </build>
+		<dependency>
+			<groupId>com.villemos.ispace</groupId>
+			<artifactId>core</artifactId>
+			<version>0.1-SNAPSHOT</version>
+		</dependency>
+
+	</dependencies>
+
 </project>
