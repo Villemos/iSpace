@@ -341,7 +341,8 @@ public class SolrProducer extends DefaultProducer {
 			}
 			set.informationobjects.add(io);
 
-			String uniqueId = (String) io.values.get(Fields.hasUri);
+			/** Find the URI field, which is the unique key. */
+			String uniqueId = (String) io.values.get(Fields.hasUri).toArray()[0];
 			if (response.getHighlighting().get(uniqueId) != null) {
 				io.highlight = response.getHighlighting().get(uniqueId).get(Fields.withRawText);
 			}
