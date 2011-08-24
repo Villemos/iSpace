@@ -64,6 +64,7 @@
 		<module>consolidator</module>
 		<module>solr</module>
 		<module>webster</module>
+		<module>excell</module>
 		<module>configuration</module>
 	</modules>
 
@@ -74,7 +75,7 @@
 		<camel.version>2.7.0</camel.version>
 		<activemq.version>5.4.2</activemq.version>
 		<commonslogging.version>1.1.1</commonslogging.version>
-		<slf4j.version>1.6.1</slf4j.version>
+		<slf4j.version>1.5.8</slf4j.version>
 		<maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
