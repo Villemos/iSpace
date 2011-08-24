@@ -62,4 +62,8 @@ public class Fields {
 	
 	/** Field used to define taxonomy. */
 	public static final String partOf = "partOf";
+	
+	public static final String spell = "spell";
+	
+	public static final String score = "score";
 }

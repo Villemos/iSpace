@@ -69,7 +69,11 @@ public class RepositoryProxy {
 	 * - Hold more. This is the case when multiple providers services the request (configured in the Camel route). Each may return upto 'rows' entries.  
 	 */
 	protected int rows = 100;
-		
+	
+	public RepositoryProxy(CamelContext context) {
+		this.context = context;
+	}	
+	
 	/**
 	 * A simple keyword search, using mainly default values and no streaming. 
 	 * 

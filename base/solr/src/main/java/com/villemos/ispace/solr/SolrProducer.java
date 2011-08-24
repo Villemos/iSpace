@@ -337,7 +337,7 @@ public class SolrProducer extends DefaultProducer {
 		for (SolrDocument document : response.getResults()) {
 			InformationObject io = new InformationObject();
 			for (String field : document.getFieldNames()) {
-				io.values.put(field, document.getFieldValue(field));
+				io.values.put(field, document.getFieldValues(field));
 			}
 			set.informationobjects.add(io);
 

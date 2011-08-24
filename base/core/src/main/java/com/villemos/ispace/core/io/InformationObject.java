@@ -24,19 +24,23 @@
 package com.villemos.ispace.core.io;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
+ * Class holding an InformationObject, being a entry in a repository.
+ * 
  * @author villemosg
  *
  */
 public class InformationObject {
 
-	public Map<String, Object> values = new HashMap<String, Object>();
+	/** The field values of the found document. The value is a list, with 0 or more entries. Each
+	 * entry is a value assigned to this document. */
+	public Map<String, Collection<Object>> values = new HashMap<String, Collection<Object>>();
 	
+	/** Extract(s) from the main content field, in which the search criterion occurs. */
 	public List<String> highlight = new ArrayList<String>();
-	
-	public long score = 0;
 }
