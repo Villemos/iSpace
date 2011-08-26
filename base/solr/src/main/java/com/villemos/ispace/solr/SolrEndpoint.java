@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 /**
  * The endpoint for production of solr producers. The endpoint does
@@ -69,7 +69,7 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 	protected String solrServerUrl = "http://localhost:8080/apache-solr-3.3.0/";
 
 	/** The solr name of the field holding the content. */
-	protected String contentFieldName = Fields.withRawText;
+	protected String contentFieldName = Fields.withRawText.replaceAll("ispace.field.", "");
 
 	/** The solr name of the field holding the unique ID (required by Solr). */
 	protected String uniqueidFieldName = Fields.hasUri;
@@ -87,6 +87,11 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 
 	protected String queryHandler = null;
 
+	/** Two delivery modes are supported;
+	 * - Batch where all results of the query is delivered in one ResultSet (DEFAULT). 
+	 * - Stream where each element in the results of the query is delivered individually. */
+	protected String deliveryMode = "batch";
+	
 	/** Default constructor. */
 	public SolrEndpoint() {
 	}
@@ -225,5 +230,13 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 
 	public void setQueryHandler(String queryHandler) {
 		this.queryHandler = queryHandler;
+	}
+
+	public String getDeliveryMode() {
+		return deliveryMode;
+	}
+
+	public void setDeliveryMode(String deliveryMode) {
+		this.deliveryMode = deliveryMode;
 	}
 }

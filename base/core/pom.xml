@@ -24,6 +24,17 @@
 
 	<repositories>
 	
+		<!-- Dependency for second string -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+	
+	
 		<!-- Repository dependency for Apache Camel. -->
 		<repository>
 			<snapshots>
@@ -61,6 +72,17 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>com.wcohen.ss</groupId>
+			<artifactId>secondstring</artifactId>
+			<version>20060615</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.villemos.ispace</groupId>
+			<artifactId>api</artifactId>
+			<version>0.1-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 </project>

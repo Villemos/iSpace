@@ -28,8 +28,8 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.impl.DefaultExchange;
 
-import com.villemos.ispace.Fields;
-import com.villemos.ispace.core.io.ResultSet;
+import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.ResultSet;
 
 
 /**

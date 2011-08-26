@@ -23,11 +23,19 @@
  */
 package com.villemos.ispace.webster;
 
-import com.villemos.ispace.httpcrawler.HttpCrawlerComponent;
+import java.util.Map;
+
+import org.apache.camel.Endpoint;
+import org.apache.camel.impl.DefaultComponent;
 
 /**
  * Represents the component that manages {@link WebsterEndpoint}.
  */
-public class WebsterComponent extends HttpCrawlerComponent {
-
+public class WebsterComponent extends DefaultComponent {
+	
+    protected Endpoint createEndpoint(String uri, String remaining, Map parameters) throws Exception {
+        Endpoint endpoint = new WebsterEndpoint(uri, this);
+        setProperties(endpoint, parameters);
+        return endpoint;
+    }
 }

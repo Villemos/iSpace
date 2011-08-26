@@ -14,5 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-class=com.villemos.ispace.excell.ExcellComponent
+class=com.villemos.ispace.webster.WebsterComponent

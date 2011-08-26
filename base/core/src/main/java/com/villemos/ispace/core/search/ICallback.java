@@ -24,8 +24,8 @@
 package com.villemos.ispace.core.search;
 
 
-import com.villemos.ispace.core.io.Facet;
-import com.villemos.ispace.core.io.InformationObject;
+import com.villemos.ispace.api.Facet;
+import com.villemos.ispace.api.InformationObject;
 
 public interface ICallback {
 

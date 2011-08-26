@@ -49,6 +49,8 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 
 	private final ExcellEndpoint endpoint;
 
+	protected long lastPollTime = 0;
+	
 	public ExcellConsumer(ExcellEndpoint endpoint, Processor processor) {
 		super(endpoint, processor);
 		this.endpoint = endpoint;
@@ -63,6 +65,14 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 
 		/** Read input file. */
 		File input = new File(endpoint.getFile());
+		
+		/** Did it change since last time?*/
+		if (input.lastModified() == lastPollTime) {
+			LOG.trace("Excell crawler ignoring input file. File has not changed.");
+			return 1;
+		}
+		lastPollTime = input.lastModified();
+		
 		try {
 			Workbook workbook = Workbook.getWorkbook(input);
 

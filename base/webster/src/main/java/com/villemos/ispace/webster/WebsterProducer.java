@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -65,7 +66,10 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.api.ResultSet;
+import com.villemos.ispace.api.Suggestion;
 import com.villemos.ispace.httpcrawler.EasyX509TrustManager;
 import com.villemos.ispace.httpcrawler.HttpClientConfigurer;
 
@@ -81,9 +85,11 @@ public class WebsterProducer extends DefaultProducer {
 	protected HttpContext localContext = null;
 
 	protected boolean ignoreAuthenticationFailure = true;
-	
-	protected Pattern pattern = Pattern.compile("<!--INFOLINKS_ON-->(.?*)<!--INFOLINKS_OFF-->");
-	
+
+	protected Pattern pattern = Pattern.compile("<!--INFOLINKS_ON-->(.*?)<!--INFOLINKS_OFF-->");
+
+	protected Pattern spellPattern = Pattern.compile("<ol id=\"franklin_spelling_help\" class=\"franklin-spelling-help\">(.*?)<div class=\"franklin-promo\"><br />");
+
 	public WebsterProducer(WebsterEndpoint endpoint) {
 		super(endpoint);
 		this.endpoint = endpoint;
@@ -99,18 +105,18 @@ public class WebsterProducer extends DefaultProducer {
 			sslContext.init(null, new TrustManager[] {new EasyX509TrustManager()}, new SecureRandom());
 
 			SchemeRegistry schemeRegistry = new SchemeRegistry();
-			
+
 			SSLSocketFactory sf = new SSLSocketFactory(sslContext);
 			Scheme httpsScheme = new Scheme("https", sf, 443);
 			schemeRegistry.register(httpsScheme);
-			
+
 			SocketFactory sfa = new PlainSocketFactory();
 			Scheme httpScheme = new Scheme("http", sfa, 80);
 			schemeRegistry.register(httpScheme);
 
 			HttpParams params = new BasicHttpParams();
 			ClientConnectionManager cm = new SingleClientConnManager(params, schemeRegistry);
-			
+
 			client = new DefaultHttpClient(cm, params);
 		}
 		else {
@@ -145,14 +151,15 @@ public class WebsterProducer extends DefaultProducer {
 		 */
 		client.setCookieStore(cookieStore);		
 		client.getParams().setParameter(ClientPNames.COOKIE_POLICY, CookiePolicy.BEST_MATCH);
-		
-		String uriStr = getWebsterEndpoint().getProtocol() + "://" + getWebsterEndpoint().getDomain();
+
+		String uriStr = getWebsterEndpoint().getProtocol() + "://" + getWebsterEndpoint().getDomain() + "/" + getWebsterEndpoint().getPath();
 		if (getWebsterEndpoint().getPort() != 80) {
 			uriStr += ":" + getWebsterEndpoint().getPort() + "/" + getWebsterEndpoint().getPath();
 		}
-		uriStr += "dictionary/" + exchange.getIn().getHeader(Fields.query);
+		String word = (String) exchange.getIn().getHeader(Fields.query);
+		uriStr += "/" + word;
 		URI uri = new URI(uriStr);
-		
+
 		if (getWebsterEndpoint().getPort() != 80) {
 			target = new HttpHost(getWebsterEndpoint().getDomain(), getWebsterEndpoint().getPort(), getWebsterEndpoint().getProtocol());
 		}
@@ -161,28 +168,55 @@ public class WebsterProducer extends DefaultProducer {
 		}
 		localContext = new BasicHttpContext();
 		localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
-		
+
 		HttpUriRequest method = new HttpGet(uri);			
 		HttpResponse response = client.execute(target, method, localContext);
-		
+
 		if (response.getStatusLine().getStatusCode() == 200) {
 			/** Extract result. */
 			String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
-			
+
+			ResultSet set = new ResultSet();
+
 			Matcher matcher = pattern.matcher(page);
 			if (matcher.find()) {
-				String result = matcher.group(1).replaceAll("\\<.*?\\>", "");
-				System.out.println("result=" + result);
+				String result = matcher.group(1).replaceAll("\\<.*?\\>", "").replaceAll("\\s+", " ");
+
+				/** Create ResultSet*/
+				InformationObject io = new InformationObject();
+				io.values.put(Fields.hasUri, Arrays.asList((Object) uriStr));
+				io.values.put(Fields.fromSource, Arrays.asList((Object) "Webster"));
+				io.values.put(Fields.hasTitle, Arrays.asList((Object) ("Webster definition of '" + word + "'.")));
+				io.values.put(Fields.ofEntityType, Arrays.asList((Object) "Definition"));
+				io.values.put(Fields.ofMimeType, Arrays.asList((Object) "text/html"));
+				io.values.put(Fields.withRawText, Arrays.asList((Object) result));
+				io.values.put(Fields.score, Arrays.asList((Object) 20));		
+				set.informationobjects.add(io);
 			}
+			else {
+				matcher = spellPattern.matcher(page);
+				if (matcher.find()) {
+					String result = matcher.group(1);
+					String[] elements = result.split("<li><a href=.*?>");
+					
+					for (String element : elements) {
+						if (element.trim().equals("") == false) {
+							set.suggestions.add(new Suggestion(element.replaceAll("<.*?>", "").trim()));
+						}
+					}
+				}
+			}
+			exchange.getOut().setBody(set);
 		}
 		else {
 			HttpEntity entity = response.getEntity();
 			InputStream instream = entity.getContent();
 			String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
+
 			System.out.println(page);
 		}
 	}
-	
+
 	protected WebsterEndpoint getWebsterEndpoint() {
 		return (WebsterEndpoint) endpoint;
 	}

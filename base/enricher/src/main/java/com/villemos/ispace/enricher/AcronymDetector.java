@@ -38,7 +38,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Headers;
 import org.apache.camel.impl.DefaultExchange;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 public class AcronymDetector {
 
@@ -50,58 +50,61 @@ public class AcronymDetector {
 	{
 		/** Matches the form 'TIT This Is Test' and '(TIT) This Is Test'*/
 		patterns.put(Pattern.compile("\\(*((\\p{Upper})(\\p{Upper}))\\)*\\s+(\\1\\2\\w+)"), Arrays.asList(new Integer[] {4, 1}));
-		
+
 		/** Matches the form 'This Is Test TIT' and 'This Is Test (TIT)'*/
 		patterns.put(Pattern.compile("((\\p{Upper})\\w+\\s+(\\p{Upper})\\w+\\s+(\\p{Upper})\\w+\\s+(\\p{Upper})\\w+)\\s+\\(*(\\2\\3)\\)*"), Arrays.asList(new Integer[] {1, 4}));
-		
+
 		/** Matches the form 'TIT (This Is Test)'*/
 		patterns.put(Pattern.compile("((\\p{Upper})(\\p{Upper}))\\s+\\(*(\\1\\2\\w+)\\)*"), Arrays.asList(new Integer[] {1, 4}));
 
-		
-		
+
+
 		/** Matches the form 'TIT This Is Test' and '(TIT) This Is Test'*/
 		patterns.put(Pattern.compile("\\(*((\\p{Upper})(\\p{Upper})(\\p{Upper}))\\)*\\s+(\\1\\w+\\s+.*?\\3\\w+)"), Arrays.asList(new Integer[] {5, 1}));
-		
+
 		/** Matches the form 'This Is Test TIT' and 'This Is Test (TIT)'*/
 		patterns.put(Pattern.compile("((\\p{Upper})\\w+\\s+(\\p{Upper})\\w+\\s+(\\p{Upper})\\w+)\\s+\\(*(\\2\\3\\4)\\)*"), Arrays.asList(new Integer[] {1, 5}));
-		
+
 		/** Matches the form 'TIT (This Is Test)'*/
 		patterns.put(Pattern.compile("((\\p{Upper})(\\p{Upper})(\\p{Upper}))\\s+\\(*(\\1\\w+\\s+.*?\\3\\w+)\\)*"), Arrays.asList(new Integer[] {1, 5}));
-		
-		
-		
+
+
+
 		/** Matches the form 'TIT This Is Test' and '(TIT) This Is Test'*/
 		patterns.put(Pattern.compile("\\(*((\\p{Upper})(\\p{Upper})(\\p{Upper})(\\p{Upper}))\\)*\\s+(\\1\\w+\\s+.*?\\4\\w+)"), Arrays.asList(new Integer[] {6, 1}));
-		
+
 		/** Matches the form 'This Is Test TIT' and 'This Is Test (TIT)'*/
 		patterns.put(Pattern.compile("((\\p{Upper})\\w+\\s+(\\p{Upper})\\w+\\s+(\\p{Upper})\\w+\\s+(\\p{Upper})\\w+)\\s+\\(*(\\2\\3\\4\\5)\\)*"), Arrays.asList(new Integer[] {1, 6}));
-		
+
 		/** Matches the form 'TIT (This Is Test)'*/
 		patterns.put(Pattern.compile("((\\p{Upper})(\\p{Upper})(\\p{Upper})(\\p{Upper}))\\s+\\(*(\\1\\w+\\s+.*?\\4\\w+)\\)*"), Arrays.asList(new Integer[] {1, 6}));
 
+		patterns.put(Pattern.compile("<td nowrap class='out_data' style='font-weight:bold;padding-left:5pt;vertical-align:middle;'>(.*?)</td>\\s+<td class='out_data' style='padding-left:5pt;'>(.*?)</td>"), Arrays.asList(new Integer[] {1, 2}));
 	}
-	
+
 	public void detectAcronyms(@Body String text, @Headers Map<String, Object> headers, CamelContext context) {
-		Iterator<Entry<Pattern, List<Integer>>> it = patterns.entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<Pattern, List<Integer>> entry = it.next();
-			Matcher matcher = entry.getKey().matcher(text) ;
-			while (matcher.find()) {
-				
-				/** Create an acronym entry. */
-				String definition = matcher.group(entry.getValue().get(0));
-				String acronym = matcher.group(entry.getValue().get(1));
-				
-				Exchange exchange = new DefaultExchange(context);
-				exchange.getIn().setHeader(Fields.prefix + Fields.hasUri, "ispace:/acronym/" + acronym + "/" + definition);
-				exchange.getIn().setHeader(Fields.prefix + Fields.hasTitle, definition + " (" + acronym + ")");
-				exchange.getIn().setHeader(Fields.prefix + Fields.withRawText, "Extracted from " + headers.get("iSpace.hdUrl"));
-				exchange.getIn().setHeader(Fields.prefix + Fields.ofDocumentType, "Acronym");
-				exchange.getIn().setHeader(Fields.prefix + Fields.ofMimeType, "Virtual");
-				exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
-				
-				/** Send it to the storage route. */
-				context.createProducerTemplate().send("direct:store", exchange);
+		if (text != null) {
+			Iterator<Entry<Pattern, List<Integer>>> it = patterns.entrySet().iterator();
+			while (it.hasNext()) {
+				Entry<Pattern, List<Integer>> entry = it.next();
+				Matcher matcher = entry.getKey().matcher(text) ;
+				while (matcher.find()) {
+
+					/** Create an acronym entry. */
+					String definition = matcher.group(entry.getValue().get(0));
+					String acronym = matcher.group(entry.getValue().get(1));
+
+					Exchange exchange = new DefaultExchange(context);
+					exchange.getIn().setHeader(Fields.hasUri, "ispace:/acronym/" + acronym + "/" + definition);
+					exchange.getIn().setHeader(Fields.hasTitle, definition + " (" + acronym + ")");
+					exchange.getIn().setHeader(Fields.withRawText, "Extracted from " + headers.get("iSpace.hdUrl"));
+					exchange.getIn().setHeader(Fields.ofEntityType, "Acronym");
+					exchange.getIn().setHeader(Fields.ofMimeType, "Virtual");
+					exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
+
+					/** Send it to the storage route. */
+					context.createProducerTemplate().send("direct:store", exchange);
+				}
 			}
 		}
 	}
@@ -113,7 +116,7 @@ public class AcronymDetector {
 	public void setPatterns(Map<Pattern, List<Integer>> patterns) {
 		this.patterns = patterns;
 	}
-	
+
 	public Map<Pattern, List<Integer>> getAdditionalPatterns() {
 		return patterns;
 	}

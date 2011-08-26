@@ -31,7 +31,7 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 public class SynonymConsolidator extends SynonymBuffer {
 
@@ -40,17 +40,21 @@ public class SynonymConsolidator extends SynonymBuffer {
 
 	@Handler
 	public void process(@Headers Map<String, Object> headers, CamelContext context) {
-		
+
+		String uri = (String) headers.get(Fields.hasUri);
+
 		/** Iterate through all fields known to be synonym fields. */
 		for (String field : discreteFields) {
 
 			/** If field doesnt exist, then continue. */
-			if (headers.containsKey(Fields.prefix + field) == false) {
+			if (headers.containsKey(field) == false) {
 				continue;
 			}
-			
+
+			String category = fieldsToEntityType.get(field);
+
 			/** Get the value. */
-			Object value = headers.get(Fields.prefix + field);
+			Object value = headers.get(field);
 			if (value == null) {
 				continue;
 			}
@@ -59,34 +63,46 @@ public class SynonymConsolidator extends SynonymBuffer {
 
 				for (Object element : (List) value) {					
 					if (element instanceof String) {
-						if (acceptedSynonyms.containsKey(element)) {
-							/** Known synonym. Replace. */
-							element = acceptedSynonyms.get(element);
-						}
-						else if (removeSynonyms.containsKey(element)) {
-							/** Synonym known to be false. Remove. */
-							// headers.put(Fields.prefix + field, null);
-						}
-						else {
-							/** New synonym. Register. */
-							registerNewSynonym(element, context);
+						if (element.equals("") == false) {
+							if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).containsKey(element)) {
+								/** Known synonym. Replace. */
+								element = acceptedSynonyms.get(category).get(value);
+							}
+							else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).containsKey(element)) {
+								/** Synonym known to be false. Remove. */
+								headers.put(field, null);
+							}
+							else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).containsKey(element)) {
+								/** Synonym known. */
+								continue;
+							}
+							else {
+								/** New synonym. Register. */
+								registerNewSynonym((String) element, category, uri, context);
+							}
 						}
 					}
 				}
 			}
 			else {
 				if (value instanceof String) {
-					if (acceptedSynonyms.containsKey(value)) {
-						/** Known synonym. Replace. */
-						headers.put(Fields.prefix + field, acceptedSynonyms.get(value));
-					}
-					else if (removeSynonyms.containsKey(value)) {
-						/** Synonym known to be false. Remove. */
-						headers.put(Fields.prefix + field, null);
-					}
-					else if (knownSynonyms.containsKey(value) == false) {
-						/** New synonym. Register. */
-						registerNewSynonym(value, context);
+					if (value.equals("") == false) {
+						if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).containsKey(value)) {
+							/** Known synonym. Replace. */
+							headers.put(field, acceptedSynonyms.get(value));
+						}
+						else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).containsKey(value)) {
+							/** Synonym known to be false. Remove. */
+							headers.put(field, null);
+						}
+						else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).containsKey(value)) {
+							/** Synonym known. */
+							continue;
+						}
+						else {
+							/** New synonym. Register. */
+							registerNewSynonym((String) value, category, uri, context);
+						}
 					}
 				}
 			}					
@@ -103,6 +119,6 @@ public class SynonymConsolidator extends SynonymBuffer {
 	public void setDiscreteFields(List<String> discreteFields) {
 		this.discreteFields = discreteFields;
 	}
-	
-	
+
+
 }

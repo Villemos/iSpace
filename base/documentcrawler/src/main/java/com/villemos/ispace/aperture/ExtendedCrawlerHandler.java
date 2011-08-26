@@ -68,8 +68,8 @@ import org.semanticdesktop.aperture.subcrawler.SubCrawlerFactory;
 import org.semanticdesktop.aperture.subcrawler.SubCrawlerRegistry;
 import org.semanticdesktop.aperture.subcrawler.impl.DefaultSubCrawlerRegistry;
 
-import com.villemos.ispace.Fields;
 import com.villemos.ispace.aperture.processor.IProcessor;
+import com.villemos.ispace.api.Fields;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -156,15 +156,15 @@ public class ExtendedCrawlerHandler implements CrawlerHandler, RDFContainerFacto
 
 		/** Build a message and set it on the message list returned from the processor. */
 		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Fields.prefix + Fields.fromSource, "File System");
-		headers.put(Fields.prefix + Fields.ofMimeType, mimetype);
+		headers.put(Fields.fromSource, "File System");
+		headers.put(Fields.ofMimeType, mimetype);
 		
 		if (((FileDataObject) object).getFile() != null) {
-			headers.put(Fields.prefix + Fields.hasTitle, ((FileDataObject) object).getFile().getName());
+			headers.put(Fields.hasTitle, ((FileDataObject) object).getFile().getName());
 		} else {
-			headers.put(Fields.prefix + Fields.hasTitle, ((FileDataObject) object).getID());
+			headers.put(Fields.hasTitle, ((FileDataObject) object).getID());
 		}
-		headers.put(Fields.prefix + Fields.hasUri, ((FileDataObject) object).getID());
+		headers.put(Fields.hasUri, ((FileDataObject) object).getID());
 
 		Message message = new DefaultMessage();
 		message.setHeaders(headers);

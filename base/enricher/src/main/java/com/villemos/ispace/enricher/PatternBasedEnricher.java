@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 public class PatternBasedEnricher {
 
@@ -53,7 +53,7 @@ public class PatternBasedEnricher {
 					Entry<Integer, String> entry = it.next();
 					
 					if (matcher.groupCount() >= entry.getKey()) {
-						headers.put(Fields.prefix + entry.getValue(), matcher.group(entry.getKey()));
+						headers.put(entry.getValue(), matcher.group(entry.getKey()));
 					}
 				}
 			}
@@ -65,7 +65,7 @@ public class PatternBasedEnricher {
 	}
 
 	public void setHeaderFieldName(String headerFieldName) {
-		this.headerFieldName = Fields.prefix + headerFieldName;
+		this.headerFieldName = headerFieldName;
 	}
 
 	public String getPattern() {

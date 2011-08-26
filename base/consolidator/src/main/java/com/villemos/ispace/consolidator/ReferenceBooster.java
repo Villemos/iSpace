@@ -35,7 +35,7 @@ import org.apache.camel.impl.DefaultExchange;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 public class ReferenceBooster {
 

@@ -48,7 +48,7 @@ import org.apache.poi.hpsf.Section;
 import org.apache.poi.poifs.eventfilesystem.POIFSReaderListener;
 import org.apache.poi.util.HexDump;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 public class MicrosoftPropertyReader implements POIFSReaderListener {
 
@@ -69,7 +69,7 @@ public class MicrosoftPropertyReader implements POIFSReaderListener {
 			while (it.hasNext()) {
 				values.add(it.next().getValue());
 			}			
-			headers.put(Fields.prefix, values);
+			headers.put("ispace.field.", values);
 			inStream.close();			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

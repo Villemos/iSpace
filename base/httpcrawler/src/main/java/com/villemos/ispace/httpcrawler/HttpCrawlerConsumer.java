@@ -76,7 +76,7 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 
 public class HttpCrawlerConsumer extends ScheduledPollConsumer {
@@ -374,9 +374,10 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 		Exchange exchange = getEndpoint().createExchange();
 
 		exchange.getIn().setBody(page);
-		exchange.getIn().setHeader(Fields.prefix + Fields.hasTitle, title);
-		exchange.getIn().setHeader(Fields.prefix + Fields.hasUri, url);
-		exchange.getIn().setHeader(Fields.prefix + Fields.ofMimeType, "text/html");
+		exchange.getIn().setHeader(Fields.hasTitle, title);
+		exchange.getIn().setHeader(Fields.hasUri, url);
+		exchange.getIn().setHeader(Fields.ofMimeType, "text/html");
+		exchange.getIn().setHeader(Fields.withRawText, page);
 		
 		getAsyncProcessor().process(exchange, new AsyncCallback() {
 			public void done(boolean doneSync) {

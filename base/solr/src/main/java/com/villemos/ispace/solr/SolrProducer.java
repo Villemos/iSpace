@@ -46,10 +46,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.villemos.ispace.Fields;
-import com.villemos.ispace.core.io.Facet;
-import com.villemos.ispace.core.io.InformationObject;
-import com.villemos.ispace.core.io.ResultSet;
+import com.villemos.ispace.api.Facet;
+import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.api.ResultSet;
 import com.villemos.ispace.core.search.ICallback;
 
 /**
@@ -106,10 +106,10 @@ public class SolrProducer extends DefaultProducer {
 		/** 
 		 * Iterate through all headers. Each field with a name 'ispace.field.[name]' will
 		 * be extracted and set on the Solr document, i.e. stored in the repository. */
-		List<String> filteredHeader = filterHeaders(headers, Fields.prefix);
+		List<String> filteredHeader = filterHeaders(headers, "ispace.field.");
 
 		for (String field : filteredHeader) {
-			setFieldValue(document, field, headers.get(Fields.prefix + field));
+			setFieldValue(document, field.replaceAll("ispace.field.", ""), headers.get(field));
 		} 
 
 		/** Make sure the document holds an ID. */
@@ -126,6 +126,8 @@ public class SolrProducer extends DefaultProducer {
 
 		/** Set the body as a field. The body is expected to be a String. */
 		document.setField(endpoint.getContentFieldName(), exchange.getIn().getBody());
+
+		LOG.info("Storing document '" + headers.get(Fields.hasUri) + "'");
 
 		/** Send the document to the SOLR server. */
 		UpdateResponse response = endpoint.getServer().add(document);
@@ -160,7 +162,7 @@ public class SolrProducer extends DefaultProducer {
 			Entry<String, Object> entry = it.next();
 
 			if (entry.getKey().startsWith(prefix)) {
-				String key = entry.getKey().replaceAll(prefix, "");
+				String key = entry.getKey();
 				filteredHeaderFields.add(key);
 			}
 		}		
@@ -208,7 +210,7 @@ public class SolrProducer extends DefaultProducer {
 			query.setFacet(true);
 			query.addFacetField(Fields.ofMimeType);
 			query.addFacetField(Fields.fromSource);
-			query.addFacetField(Fields.ofDocumentType);
+			query.addFacetField(Fields.ofEntityType);
 			query.addFacetField(Fields.withReferenceId);
 			query.addFacetField(Fields.withIssue);
 			query.addFacetField(Fields.withRevision);
@@ -231,7 +233,7 @@ public class SolrProducer extends DefaultProducer {
 				exchange.getOut().setBody((int) response.getResults().getNumFound());
 			} 
 			else {
-				exchange.getOut().setBody(getResultSet(response));
+				exchange.getOut().setBody(Utilities.getResultSet(response));
 			}
 		}
 		else {
@@ -258,7 +260,7 @@ public class SolrProducer extends DefaultProducer {
 			boolean hasDeliveredFacets = false;
 
 			do {				
-				ResultSet set = getResultSet(response);
+				ResultSet set = Utilities.getResultSet(response);
 
 				for(InformationObject document : set.informationobjects){
 					callback.receive(document);
@@ -329,38 +331,5 @@ public class SolrProducer extends DefaultProducer {
 				}					
 			}
 		}
-	}
-
-	protected ResultSet getResultSet(QueryResponse response) {
-		ResultSet set = new ResultSet();
-		set.informationobjects = new ArrayList<InformationObject>();
-		for (SolrDocument document : response.getResults()) {
-			InformationObject io = new InformationObject();
-			for (String field : document.getFieldNames()) {
-				io.values.put(field, document.getFieldValues(field));
-			}
-			set.informationobjects.add(io);
-
-			/** Find the URI field, which is the unique key. */
-			String uniqueId = (String) io.values.get(Fields.hasUri).toArray()[0];
-			if (response.getHighlighting().get(uniqueId) != null) {
-				io.highlight = response.getHighlighting().get(uniqueId).get(Fields.withRawText);
-			}
-		}
-
-		set.facets = new ArrayList<Facet>();
-		for (FacetField facetfield :  response.getFacetFields()) {
-			Facet facet = new Facet();
-			facet.field = facetfield.getName();
-
-			if (facetfield.getValues() != null) {
-				for (Count count : facetfield.getValues()) {
-					facet.values.put(count.getName(), count.getCount());
-				}
-			}
-			set.facets.add(facet);
-		}
-
-		return set;
 	}
 }

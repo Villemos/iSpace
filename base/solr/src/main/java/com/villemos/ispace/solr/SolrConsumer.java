@@ -25,7 +25,10 @@ package com.villemos.ispace.solr;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.camel.AsyncCallback;
@@ -40,16 +43,20 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 
+import com.villemos.ispace.api.Facet;
+import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.api.ResultSet;
+
 public class SolrConsumer extends ScheduledPollConsumer {
 
-    private static final Log LOG = LogFactory.getLog(SolrConsumer.class);
+	private static final Log LOG = LogFactory.getLog(SolrConsumer.class);
 	/** Time stamp of the last time a retrieval was performed. Can be used to do
 	 * incremental retrievals. */
-    
+
 	protected Date lastRetrievalTime = new Date(0);
 
 	protected DateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-	
+
 	public SolrConsumer(DefaultEndpoint endpoint, Processor processor) {
 		super(endpoint, processor);		
 	}
@@ -61,14 +68,14 @@ public class SolrConsumer extends ScheduledPollConsumer {
 
 	@Override
 	protected int poll() throws Exception {
-		
+
 		String queryString = getSolrEndpoint().getQuery();
-		
+
 		queryString = queryString.replaceAll("FROMLAST", format.format(lastRetrievalTime));
 		lastRetrievalTime = new Date();
-		
+
 		SolrQuery query = new SolrQuery(queryString);		
-		
+
 		if (getSolrEndpoint().getQueryHandler() != null) {
 			query.setQueryType(getSolrEndpoint().getQueryHandler());
 		}
@@ -80,24 +87,63 @@ public class SolrConsumer extends ScheduledPollConsumer {
 			log.error("Failed to execute retrieval request. Failed with status '" + response.getStatus() + "'.");
 		}
 
-		/** Iterate through the found documents and inject them. */
-		for (SolrDocument doc : response.getResults()) {
-			
+		/** Get the result set. */
+		ResultSet results = Utilities.getResultSet(response);
+
+		/** Either deliver the complete result set as on batch, or as a stream. */
+		if (getSolrEndpoint().getDeliveryMode().equals("batch")) {
+
 			Exchange exchange = getEndpoint().createExchange();
-	
-			/** Set all Solr document fields as headers. */
-			for (String name : doc.getFieldNames()) {
-				exchange.getIn().setHeader("Fields.prefix." + name, doc.getFirstValue(name));
-			}
-			exchange.getIn().setBody(doc);
-				
+
+			exchange.getIn().setBody(results);
+
 			getAsyncProcessor().process(exchange, new AsyncCallback() {
 				public void done(boolean doneSync) {
 					LOG.trace("Done processing URL");
 				}
 			});
 		}
-		
+		else {
+			/** Iterate through the result set and inject the io objects. */			
+			for (InformationObject io : results.informationobjects) {
+			
+				Exchange exchange = getEndpoint().createExchange();
+
+				/** Set all Solr document fields as headers. */
+				Iterator<Entry<String, Collection<Object>>> it = io.values.entrySet().iterator();
+				while (it.hasNext()) {
+					Entry<String, Collection<Object>> entry = it.next();
+					exchange.getIn().setHeader("ispace.field." + entry.getKey(), entry.getValue());
+				}
+				exchange.getIn().setBody(io);
+
+				getAsyncProcessor().process(exchange, new AsyncCallback() {
+					public void done(boolean doneSync) {
+						LOG.trace("Done processing URL");
+					}
+				});
+			}
+			
+			for (Facet facet : results.facets) {
+				
+				Exchange exchange = getEndpoint().createExchange();
+
+				/** Set all Solr document fields as headers. */
+				Iterator<Entry<String, Long>> it = facet.values.entrySet().iterator();
+				while (it.hasNext()) {
+					Entry<String, Long> entry = it.next();
+					exchange.getIn().setHeader("ispace.facet." + entry.getKey(), entry.getValue());
+				}
+				exchange.getIn().setBody(facet);
+
+				getAsyncProcessor().process(exchange, new AsyncCallback() {
+					public void done(boolean doneSync) {
+						LOG.trace("Done processing URL");
+					}
+				});
+			}			
+		}
+
 		return 0;
 	}
 

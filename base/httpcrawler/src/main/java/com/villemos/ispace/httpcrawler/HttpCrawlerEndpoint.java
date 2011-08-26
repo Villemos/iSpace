@@ -64,6 +64,7 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 	protected String domain;
 	protected String path = "";
 	protected int port = 80;
+
 	protected String consumerClassName = "com.villemos.ispace.httpcrawler.HttpCrawlerConsumer";
 
 	public HttpCrawlerEndpoint(String uri, HttpCrawlerComponent component) {

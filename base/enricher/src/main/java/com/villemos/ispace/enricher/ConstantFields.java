@@ -31,7 +31,7 @@ import java.util.Map.Entry;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.Fields;
+import com.villemos.ispace.api.Fields;
 
 /** Class for adding a number of fixed fields to the document. The fixed fields
  * are configured as part of the system setup. Typically this should be used to
@@ -48,7 +48,7 @@ public class ConstantFields {
 		Iterator<Entry<String, String>> it = constantFields.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, String> entry = it.next();
-			headerFields.put(Fields.prefix + entry.getKey(), entry.getValue());
+			headerFields.put(entry.getKey(), entry.getValue());
 		}
 	}
 

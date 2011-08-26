@@ -27,6 +27,8 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,9 @@ import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.api.ResultSet;
+
 /**
  * The HelloWorld producer.
  */
@@ -54,6 +59,8 @@ public class ExcellProducer extends DefaultProducer {
 	private static final transient Logger LOG = LoggerFactory.getLogger(ExcellProducer.class);
 
 	private ExcellEndpoint endpoint;
+
+	protected String multiValueSeparator = "||";
 
 	protected WritableFont boldYellowFont = new WritableFont(WritableFont.ARIAL, 10, WritableFont.BOLD); 	
 	protected WritableCellFormat boldYellow = new WritableCellFormat(boldYellowFont);
@@ -94,7 +101,10 @@ public class ExcellProducer extends DefaultProducer {
 				row++;
 			}
 
-			if (exchange.getIn().getBody() instanceof List) {
+			if (exchange.getIn().getBody() instanceof ResultSet) {
+				writeSheet(workbook, ((ResultSet) exchange.getIn().getBody()).informationobjects);
+			}
+			else if (exchange.getIn().getBody() instanceof List) {
 				List objects = (List) exchange.getIn().getBody();
 				Object object = objects.get(0);
 				writeSheet(workbook, object.getClass().getName(), 1, objects);
@@ -118,12 +128,54 @@ public class ExcellProducer extends DefaultProducer {
 		}
 	}
 
+	private void writeSheet(WritableWorkbook workbook, List<InformationObject> informationobjects) {
+		WritableSheet bodydata = workbook.createSheet("ResultSet", 1);
+
+		try{ 
+
+			/** Map of fields to column IDs*/
+			int row = 1;
+			int nextFreeColumn = 0;
+			Map<String, Integer> fields = new HashMap<String, Integer>();
+
+			/** Iterate through all information objects. */
+
+			for (InformationObject io : informationobjects) {
+
+				/** Iterate through the fields. */
+				for (String field : io.values.keySet()) {
+					Collection<Object> values = io.values.get(field);
+
+					/** Aggregate result. */
+					String valueStr = "";
+					for (Object value : values) {
+						valueStr = valueStr.equals("") ? (String) value : multiValueSeparator + (String) value;
+					}
+
+					if (fields.containsKey(field) == false) {
+						fields.put(field, nextFreeColumn);
+						bodydata.addCell(new Label(nextFreeColumn, 0, field.replaceAll("ispace.field.", "")));
+						nextFreeColumn++;
+					}
+
+					bodydata.addCell(new Label(fields.get(field), row, valueStr));
+				}
+
+				row++;
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+
+	}
+
 	protected void writeSheet(WritableWorkbook workbook, String sheetName, int sheetNumber, List data) {
 
 		if (data.isEmpty()) {
 			return;
 		}
-		
+
 		int row = 0;
 
 		WritableSheet bodydata = workbook.createSheet(sheetName, 1);
@@ -139,7 +191,7 @@ public class ExcellProducer extends DefaultProducer {
 			if (object instanceof String) {
 				int column = 1;
 				bodydata.addCell(new Label(column, 0, "Value"));
-				
+
 				row = 1;
 				for (Object anObject : data) {
 					column = 0;
@@ -166,9 +218,14 @@ public class ExcellProducer extends DefaultProducer {
 
 					column++;
 					for (Field field : getAllFields(anObject.getClass())) {
-						field.setAccessible(true);
-						bodydata.addCell(new Label(column, row, field.get(anObject).toString()));
-						column++;
+						if (field.get(anObject) instanceof List) {
+							/** TODO */
+						}
+						else {
+							field.setAccessible(true);
+							bodydata.addCell(new Label(column, row, field.get(anObject).toString()));
+							column++;
+						}
 					}
 
 					row++;

@@ -66,6 +66,9 @@
 		<module>webster</module>
 		<module>excell</module>
 		<module>configuration</module>
+		<module>api</module>
+		<module>api-rmi</module>
+		<module>api-camel</module>
 	</modules>
 
 	<properties>
