@@ -28,7 +28,6 @@ import java.io.InputStream;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.security.SecureRandom;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,8 +65,8 @@ import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
 import com.villemos.ispace.api.Suggestion;
 import com.villemos.ispace.httpcrawler.EasyX509TrustManager;
@@ -156,7 +155,7 @@ public class WebsterProducer extends DefaultProducer {
 		if (getWebsterEndpoint().getPort() != 80) {
 			uriStr += ":" + getWebsterEndpoint().getPort() + "/" + getWebsterEndpoint().getPath();
 		}
-		String word = (String) exchange.getIn().getHeader(Fields.query);
+		String word = (String) exchange.getIn().getHeader(Options.query);
 		uriStr += "/" + word;
 		URI uri = new URI(uriStr);
 
@@ -184,13 +183,13 @@ public class WebsterProducer extends DefaultProducer {
 
 				/** Create ResultSet*/
 				InformationObject io = new InformationObject();
-				io.values.put(Fields.hasUri, Arrays.asList((Object) uriStr));
-				io.values.put(Fields.fromSource, Arrays.asList((Object) "Webster"));
-				io.values.put(Fields.hasTitle, Arrays.asList((Object) ("Webster definition of '" + word + "'.")));
-				io.values.put(Fields.ofEntityType, Arrays.asList((Object) "Definition"));
-				io.values.put(Fields.ofMimeType, Arrays.asList((Object) "text/html"));
-				io.values.put(Fields.withRawText, Arrays.asList((Object) result));
-				io.values.put(Fields.score, Arrays.asList((Object) 20));		
+				io.hasUri = uriStr;
+				io.fromSource = "Webster";
+				io.hasTitle = "Webster definition of '" + word + "'.";
+				io.ofEntityType = "Definition";
+				io.ofMimeType = "text/html";
+				io.withRawText = result;
+				io.score = 20;		
 				set.informationobjects.add(io);
 			}
 			else {

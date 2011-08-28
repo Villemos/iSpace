@@ -7,6 +7,7 @@
   </parent>
   <groupId>com.villemos.ispace</groupId>
   <artifactId>api-camel</artifactId>
+  <name>iSpace apicamel - Library</name>
   <version>0.1-SNAPSHOT</version>
   
   <dependencies>

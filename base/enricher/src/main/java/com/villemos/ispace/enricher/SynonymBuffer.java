@@ -23,24 +23,26 @@
  */
 package com.villemos.ispace.enricher;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.camel.Body;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
-import org.apache.camel.Headers;
 import org.apache.camel.impl.DefaultExchange;
 
-import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.Synonym;
 import com.villemos.ispace.core.utilities.StringComparison;
 
 public class SynonymBuffer {
 
 	protected Map<String, String> fieldsToEntityType = null;
 
-	protected Map<String, Map<String, String>> acceptedSynonyms = new HashMap<String, Map<String, String>>();
-	protected Map<String, Map<String, String>> removeSynonyms = new HashMap<String, Map<String, String>>();
-	protected Map<String, Map<String, String>> knownSynonyms = new HashMap<String, Map<String, String>>();
+	protected Map<String, List<String>> acceptedSynonyms = new HashMap<String, List<String>>();
+	protected Map<String, List<String>> removeSynonyms = new HashMap<String, List<String>>();
+	protected Map<String, List<String>> knownSynonyms = new HashMap<String, List<String>>();
 
 	protected static double threshold = 0.9;
 
@@ -48,9 +50,7 @@ public class SynonymBuffer {
 	// Elastic (store)
 	// Geotagger
 	// 
-	public void registerNewSynonym(String element, String category, String uri, CamelContext context) {
-		Exchange exchange = new DefaultExchange(context);
-
+	public void registerNewSynonym(String element, String category, String fromUri, CamelContext context) {
 		double bestScore = 0D;		
 		String root = element;
 
@@ -64,42 +64,38 @@ public class SynonymBuffer {
 			}
 		}
 
-		exchange.getIn().setHeader(Fields.hasTitle, "Synonym: " + element);
-		exchange.getIn().setHeader(Fields.hasUri, "ispace:synonym/" + category + "/"+ root + "/" + element);
-		exchange.getIn().setHeader(Fields.ofMimeType, "virtual");
-		exchange.getIn().setHeader(Fields.ofEntityType, "Synonym");
-		exchange.getIn().setHeader(Fields.hasState, "candidate");
-		exchange.getIn().setHeader(Fields.withRawText, element);
-		exchange.getIn().setHeader(Fields.hasRootValue, root);
-		exchange.getIn().setHeader(Fields.ofCategory, category);
-		exchange.getIn().setHeader(Fields.withAttachedLog, "Candidate synonym detected and extracted from source '" + uri + "'.");
+		/** Create new synonym. */
+		Synonym synonym = new Synonym(element, category, root, fromUri);				
+		
+		/** Register locally. */
+		registerSynonym(synonym);
+		
+		/** Send into system for storage. */
+		Exchange exchange = new DefaultExchange(context);
 		exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
-
-		registerSynonym(exchange.getIn().getHeaders());
+		exchange.getIn().setBody(synonym);
 
 		context.createProducerTemplate().send("direct:store", exchange);
 	}
 
-	public synchronized void registerSynonym(@Headers Map<String, Object> headers) {
-		String synonymCategory = (String) headers.get(Fields.ofCategory);
-
-		if (headers.get(Fields.hasState).equals("accepted")) {
-			if (acceptedSynonyms.containsKey(synonymCategory) == false) {
-				acceptedSynonyms.put(synonymCategory, new HashMap<String, String>());
+	public synchronized void registerSynonym(@Body Synonym synonym) {
+		if (synonym.hasState.equals("accepted")) {
+			if (acceptedSynonyms.containsKey(synonym.ofCategory) == false) {
+				acceptedSynonyms.put(synonym.ofCategory, new ArrayList<String>());
 			}
-			acceptedSynonyms.get(synonymCategory).put((String) headers.get(Fields.withRawText), (String) headers.get(Fields.hasRootValue));
+			acceptedSynonyms.get(synonym.ofCategory).add(synonym.withRawText);
 		}
-		else if (headers.get(Fields.hasState).equals("remove")) {
-			if (removeSynonyms.containsKey(synonymCategory) == false) {
-				removeSynonyms.put(synonymCategory, new HashMap<String, String>());
+		else if (synonym.hasState.equals("remove")) {
+			if (removeSynonyms.containsKey(synonym.ofCategory) == false) {
+				removeSynonyms.put(synonym.ofCategory, new ArrayList<String>());
 			}
-			removeSynonyms.get(synonymCategory).put((String) headers.get(Fields.withRawText), (String) headers.get(Fields.hasRootValue));
+			removeSynonyms.get(synonym.ofCategory).add(synonym.withRawText);
 		}
 
-		if (knownSynonyms.containsKey(synonymCategory) == false) {
-			knownSynonyms.put(synonymCategory, new HashMap<String, String>());
+		if (knownSynonyms.containsKey(synonym.ofCategory) == false) {
+			knownSynonyms.put(synonym.ofCategory, new ArrayList<String>());
 		}
-		knownSynonyms.get(synonymCategory).put((String) headers.get(Fields.withRawText), (String) headers.get(Fields.hasRootValue));
+		knownSynonyms.get(synonym.ofCategory).add(synonym.withRawText);
 	}
 
 	public Map<String, String> getFieldsToEntityType() {

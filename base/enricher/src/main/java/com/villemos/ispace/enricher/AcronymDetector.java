@@ -36,9 +36,11 @@ import org.apache.camel.Body;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Headers;
+import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultExchange;
 
 import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.core.utilities.MessageBuilder;
 
 public class AcronymDetector {
 
@@ -91,16 +93,9 @@ public class AcronymDetector {
 				while (matcher.find()) {
 
 					/** Create an acronym entry. */
-					String definition = matcher.group(entry.getValue().get(0));
-					String acronym = matcher.group(entry.getValue().get(1));
-
-					Exchange exchange = new DefaultExchange(context);
-					exchange.getIn().setHeader(Fields.hasUri, "ispace:/acronym/" + acronym + "/" + definition);
-					exchange.getIn().setHeader(Fields.hasTitle, definition + " (" + acronym + ")");
-					exchange.getIn().setHeader(Fields.withRawText, "Extracted from " + headers.get("iSpace.hdUrl"));
-					exchange.getIn().setHeader(Fields.ofEntityType, "Acronym");
-					exchange.getIn().setHeader(Fields.ofMimeType, "Virtual");
-					exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
+					Message message = MessageBuilder.createAcronymMessage(matcher.group(entry.getValue().get(0)), matcher.group(entry.getValue().get(1)), (String) headers.get(Fields.hasUri));
+					Exchange exchange = new DefaultExchange(context);	
+					exchange.setIn(message);
 
 					/** Send it to the storage route. */
 					context.createProducerTemplate().send("direct:store", exchange);

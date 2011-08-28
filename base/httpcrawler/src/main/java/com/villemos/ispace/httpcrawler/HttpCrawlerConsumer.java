@@ -43,6 +43,7 @@ import javax.net.ssl.TrustManager;
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
+import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.impl.ScheduledPollConsumer;
@@ -77,6 +78,8 @@ import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 
 import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.core.utilities.MessageBuilder;
 
 
 public class HttpCrawlerConsumer extends ScheduledPollConsumer {
@@ -370,15 +373,10 @@ public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 		if (titleMatcher.find() == true) {
 			title = titleMatcher.group(1).trim();
 		}
-
-		Exchange exchange = getEndpoint().createExchange();
-
-		exchange.getIn().setBody(page);
-		exchange.getIn().setHeader(Fields.hasTitle, title);
-		exchange.getIn().setHeader(Fields.hasUri, url);
-		exchange.getIn().setHeader(Fields.ofMimeType, "text/html");
-		exchange.getIn().setHeader(Fields.withRawText, page);
 		
+		InformationObject io = new InformationObject(url, title, "text/html", getHttpCrawlerEndpoint().getSourceName(), page); 
+		Exchange exchange = MessageBuilder.buildExchange(io, getEndpoint().getCamelContext()); 
+
 		getAsyncProcessor().process(exchange, new AsyncCallback() {
 			public void done(boolean doneSync) {
 				LOG.trace("Done processing URL");

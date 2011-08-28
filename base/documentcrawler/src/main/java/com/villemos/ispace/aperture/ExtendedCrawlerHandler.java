@@ -28,13 +28,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
 import org.ontoware.rdf2go.RDF2Go;
 import org.ontoware.rdf2go.model.Model;
 import org.ontoware.rdf2go.model.node.URI;
@@ -69,7 +66,7 @@ import org.semanticdesktop.aperture.subcrawler.SubCrawlerRegistry;
 import org.semanticdesktop.aperture.subcrawler.impl.DefaultSubCrawlerRegistry;
 
 import com.villemos.ispace.aperture.processor.IProcessor;
-import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.core.utilities.MessageBuilder;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -141,7 +138,7 @@ public class ExtendedCrawlerHandler implements CrawlerHandler, RDFContainerFacto
 	}
 
 	public void objectNew(Crawler crawler, DataObject object) {
-
+		
 		String mimetype = process(crawler, (FileDataObject) object);
 
 		String fullText = "";
@@ -155,20 +152,17 @@ public class ExtendedCrawlerHandler implements CrawlerHandler, RDFContainerFacto
 		}
 
 		/** Build a message and set it on the message list returned from the processor. */
-		Map<String, Object> headers = new HashMap<String, Object>();
-		headers.put(Fields.fromSource, "File System");
-		headers.put(Fields.ofMimeType, mimetype);
-		
+		String hasTitle = "";
+		String hasUri = "";
 		if (((FileDataObject) object).getFile() != null) {
-			headers.put(Fields.hasTitle, ((FileDataObject) object).getFile().getName());
+			hasTitle = ((FileDataObject) object).getFile().getName();
+			hasUri = ((FileDataObject) object).getFile().getAbsolutePath();
 		} else {
-			headers.put(Fields.hasTitle, ((FileDataObject) object).getID());
+			hasTitle = ((FileDataObject) object).getID().toString();
+			hasUri = ((FileDataObject) object).getID().toString();
 		}
-		headers.put(Fields.hasUri, ((FileDataObject) object).getID());
 
-		Message message = new DefaultMessage();
-		message.setHeaders(headers);
-		message.setBody(fullText);
+		Message message = MessageBuilder.createIoMessage(hasUri, hasTitle, mimetype, "File System", fullText);
 		messages.add(message);
 
 		/** Add all messages that the specific processors may be able to extract from this file. */

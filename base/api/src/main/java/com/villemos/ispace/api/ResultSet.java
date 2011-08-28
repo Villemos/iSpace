@@ -21,11 +21,22 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.enricher;
+package com.villemos.ispace.api;
 
-public class UriUtility {
+import java.util.ArrayList;
+import java.util.List;
 
-	static public String createAcronymUri(String acronym, String definition) {
-		return "acronym://" + acronym + "/" + definition;
+public class ResultSet {
+
+	public List<InformationObject> informationobjects = new ArrayList<InformationObject>();
+	
+	public List<Suggestion> suggestions = new ArrayList<Suggestion>();
+	
+	public List<Facet> facets = new ArrayList<Facet>();
+	
+	public Statistics statistics = new Statistics();
+	
+	public List<InformationObject> getInformationObjects() {
+		return informationobjects;
 	}
 }

@@ -143,23 +143,23 @@ public class ExcellProducer extends DefaultProducer {
 			for (InformationObject io : informationobjects) {
 
 				/** Iterate through the fields. */
-				for (String field : io.values.keySet()) {
-					Collection<Object> values = io.values.get(field);
-
-					/** Aggregate result. */
-					String valueStr = "";
-					for (Object value : values) {
-						valueStr = valueStr.equals("") ? (String) value : multiValueSeparator + (String) value;
-					}
-
-					if (fields.containsKey(field) == false) {
-						fields.put(field, nextFreeColumn);
-						bodydata.addCell(new Label(nextFreeColumn, 0, field.replaceAll("ispace.field.", "")));
-						nextFreeColumn++;
-					}
-
-					bodydata.addCell(new Label(fields.get(field), row, valueStr));
-				}
+//				for (String field : io.values.keySet()) {
+//					Collection<Object> values = io.values.get(field);
+//
+//					/** Aggregate result. */
+//					String valueStr = "";
+//					for (Object value : values) {
+//						valueStr = valueStr.equals("") ? (String) value : multiValueSeparator + (String) value;
+//					}
+//
+//					if (fields.containsKey(field) == false) {
+//						fields.put(field, nextFreeColumn);
+//						bodydata.addCell(new Label(nextFreeColumn, 0, field.replaceAll("ispace.field.", "")));
+//						nextFreeColumn++;
+//					}
+//
+//					bodydata.addCell(new Label(fields.get(field), row, valueStr));
+//				}
 
 				row++;
 			}

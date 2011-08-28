@@ -21,58 +21,24 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.core.search;
+package com.villemos.ispace.api;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Exchange;
-import org.apache.camel.ExchangePattern;
-import org.apache.camel.impl.DefaultExchange;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 
-import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
 
+public interface IData extends Remote {
 
-/**
- * API for issuing retrieval requests.
- * 
- * IMPORTANT: To use this API the Camel configuration must contain a route 
- *   <route>
- *      <from uri="direct:search"/>
- *      ...
- *   </route>
- * 
- * A request is send through a Camel route. This allows the request to go through a 
- * configurable number of steps, where each step can transform the request in some 
- * way. Examples are the expansion of the query to include synonyms of the same word.
- * 
- * It also allows each request to be distributed to a configurable set of providers,
- * for example a solr repository holding documents + a dynamic webster consumer providing
- * term definitions.
- *
- * Results are returned either as a batch (ResultSet) or as a stream (continuous delivery of 
- * single InformationObject or Facet). When using a stream, the user must provide a class
- * handling the callback. The class must implement the 'ICallback' interface.
- * 
- * Streaming is ideal for consumers which support asynchonious processing, such as GUIs that
- * can update single entries in a list. Total delivery time will be the same, but the first
- * entry will arrive much faster, thus improving the responsiveness of the system.
- *
- */
-public class RepositoryProxy {
-
-	/** The Camel context used to send the request.*/
-	protected CamelContext context = null;
-
-	/** The default minimum number of entries to be returned.  This is a 
-	 * desired number, not a guaranteed number. The actually returned data may
-	 * - Hold less. This is the case when the number of matches is lower than the configured number of rows.
-	 * - Hold more. This is the case when multiple providers services the request (configured in the Camel route). Each may return upto 'rows' entries.  
+	/**
+	 * Stores a comment to an existing entry. The entry being commented is called 
+	 * the 'parent'.
+	 * 
+	 * @param uriOfParent The URI (Fields.hasUri) of the parent entry.
+	 * @param comment The comment
+	 * @return Boolean flag indicating success of the storage.
 	 */
-	protected int rows = 100;
-	
-	public RepositoryProxy(CamelContext context) {
-		this.context = context;
-	}	
+	public boolean storeComment(String uriOfParent, String comment)  throws RemoteException;
 	
 	/**
 	 * A simple keyword search, using mainly default values and no streaming. 
@@ -83,9 +49,7 @@ public class RepositoryProxy {
 	 * @param search The keyword(s) of the search
 	 * @return A result set holding all documents (including highlighting and score) and facets.
 	 */
-	public ResultSet search(String search) {
-		return doSearch(search, true, null, 0);
-	}
+	public ResultSet search(String search) throws RemoteException;
 
 	/**
 	 * A simple keyword search, using mainly default values and streaming.
@@ -96,9 +60,7 @@ public class RepositoryProxy {
 	 * @param search The keyword(s) of the search
 	 * @param callback The consumer to be called for each found document / facet.
 	 */
-	public void search(String search, ICallback callback) {		
-		doSearch(search, true, callback, 0);	
-	} 	
+	public void search(String search, ICallback callback) throws RemoteException;
 
 	/**
 	 * A simple keyword search, using mainly default values and no streaming, with the
@@ -112,9 +74,7 @@ public class RepositoryProxy {
 	 * @param facets Flag setting whether the facets should be retrieved.
 	 * @return A result set holding all documents (including highlighting and score) and facets (optional).
 	 */
-	public ResultSet search(String search, boolean facets) {
-		return doSearch(search, facets, null, 0);
-	}
+	public ResultSet search(String search, boolean facets) throws RemoteException;
 
 	/**
 	 * A simple keyword search, using mainly default values and streaming, with the
@@ -127,10 +87,8 @@ public class RepositoryProxy {
 	 * @param search The keyword(s) of the search.
 	 * @param facets Flag setting whether the facets should be retrieved.
 	 */
-	public void search(String search, boolean facets, ICallback callback) {
-		doSearch(search, facets, callback, 0);
-	}
-
+	public void search(String search, boolean facets, ICallback callback) throws RemoteException;
+	
 	/**
 	 * A simple keyword search, starting from an offset and no streaming. 
 	 * 
@@ -143,9 +101,7 @@ public class RepositoryProxy {
 	 * @param offset The offset of the first entry to be retrieved. Can be used to 'continue' a search.
 	 * @return A result set holding all documents (including highlighting and score) and facets.
 	 */
-	public ResultSet search(String search, int offset) {
-		return doSearch(search, true, null, offset);
-	}
+	public ResultSet search(String search, int offset) throws RemoteException;
 
 	/**
 	 * A simple keyword search, starting from an offset and streaming. 
@@ -160,9 +116,7 @@ public class RepositoryProxy {
 	 * @param offset The offset of the first entry to be retrieved. Can be used to 'continue' a search.
 	 * @return A result set holding all documents (including highlighting and score) and facets.
 	 */
-	public void search(String search, ICallback callback, int offset) {
-		doSearch(search, true, callback, offset);	
-	} 	
+	public void search(String search, ICallback callback, int offset) throws RemoteException;
 
 	/**
 	 * A simple keyword search, using mainly default values and no streaming, with the
@@ -179,9 +133,7 @@ public class RepositoryProxy {
 	 * @param offset The offset of the first entry to be retrieved. Can be used to 'continue' a search.
 	 * @return A result set holding all documents (including highlighting and score) and facets.
 	 */
-	public ResultSet search(String search, boolean facets, int offset) {
-		return doSearch(search, facets, null, offset);
-	}
+	public ResultSet search(String search, boolean facets, int offset) throws RemoteException;
 
 	/**
 	 * A simple keyword search, using mainly default values and streaming, with the
@@ -199,65 +151,5 @@ public class RepositoryProxy {
 	 * @param offset The offset of the first entry to be retrieved. Can be used to 'continue' a search.
 	 * @return A result set holding all documents (including highlighting and score) and facets.
 	 */
-	public void search(String search, boolean facets, ICallback callback, int offset) {
-		doSearch(search, facets, callback, offset);
-	}
-
-	
-	/**
-	 * The actual method to perform the retrieval. Used by the public search methods.
-	 * This is the central point to update when reconfiguring search behaviour.
-	 * 
-	 * @param search The keyword(s) of the search
-	 * @param facets The consumer to be called for each found document / facet.
-	 * @param callback The consumer to be called for each found document / facet.
-	 * @param offset The offset of the first entry to be retrieved. Can be used to 'continue' a search.
-	 * @return A result set holding all documents (including highlighting and score) and facets.
-	 */
-	protected ResultSet doSearch(String search, boolean facets, ICallback callback, int offset) {
-		
-		Exchange exchange = new DefaultExchange(context, ExchangePattern.InOut);
-		exchange.getIn().setHeader(Options.query, search);
-		exchange.getIn().setHeader(Options.stream, callback);
-		exchange.getIn().setHeader(Options.facets, facets);
-		exchange.getIn().setHeader(Options.offset, offset);
-		exchange.getIn().setHeader(Options.rows, rows);
-		context.createProducerTemplate().send("direct:search", exchange);
-		
-		return (ResultSet) exchange.getOut().getBody();
-	}
-
-	
-	/**
-	 * Sets the context of the API. Is needed to inject requests into the Camel route.
-	 * 
-	 * @param context The Camel context of the route.
-	 */
-	public void setContext(CamelContext context) {
-		this.context = context;
-	}
-
-	/**
-	 * Gets the number of 'rows' to be retrieved, i.e. the number of entries. This is a 
-	 * desired number, not a guaranteed number. The actually returned data may
-	 * - Hold less. This is the case when the number of matches is lower than the configured number of rows.
-	 * - Hold more. This is the case when multiple providers services the request (configured in the Camel route). Each may return upto 'rows' entries. 
-	 * 
-	 * @return Number of entries to be retrieved.
-	 */
-	public int getRows() {
-		return rows;
-	}
-
-	/**
-	 * Sets the number of 'rows' to be retrieved, i.e. the number of entries. This is a 
-	 * desired number, not a guaranteed number. The actually returned data may
-	 * - Hold less. This is the case when the number of matches is lower than the configured number of rows.
-	 * - Hold more. This is the case when multiple providers services the request (configured in the Camel route). Each may return upto 'rows' entries. 
-	 * 
-	 * @return Number of entries to be retrieved.
-	 */
-	public void setRows(int rows) {
-		this.rows = rows;
-	}
+	public void search(String search, boolean facets, ICallback callback, int offset) throws RemoteException;		
 }

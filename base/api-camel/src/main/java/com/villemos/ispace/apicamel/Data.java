@@ -11,6 +11,7 @@ import org.apache.camel.impl.DefaultExchange;
 import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.ICallback;
 import com.villemos.ispace.api.IData;
+import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
 
 public class Data implements IData {
@@ -88,11 +89,11 @@ public class Data implements IData {
 	protected ResultSet doSearch(String search, boolean facets, ICallback callback, int offset) {
 
 		Exchange exchange = new DefaultExchange(context, ExchangePattern.InOut);
-		exchange.getIn().setHeader(Fields.query, search);
-		exchange.getIn().setHeader(Fields.stream, callback);
-		exchange.getIn().setHeader(Fields.facetquery, facets);
-		exchange.getIn().setHeader(Fields.offset, offset);
-		exchange.getIn().setHeader(Fields.rows, rows);
+		exchange.getIn().setHeader(Options.query, search);
+		exchange.getIn().setHeader(Options.stream, callback);
+		exchange.getIn().setHeader(Options.facets, facets);
+		exchange.getIn().setHeader(Options.offset, offset);
+		exchange.getIn().setHeader(Options.rows, rows);
 		context.createProducerTemplate().send(searchRouteName, exchange);
 
 		return (ResultSet) exchange.getOut().getBody();

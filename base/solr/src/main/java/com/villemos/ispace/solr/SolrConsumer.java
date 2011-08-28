@@ -25,10 +25,7 @@ package com.villemos.ispace.solr;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.camel.AsyncCallback;
@@ -41,7 +38,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
 
 import com.villemos.ispace.api.Facet;
 import com.villemos.ispace.api.InformationObject;
@@ -88,60 +84,45 @@ public class SolrConsumer extends ScheduledPollConsumer {
 		}
 
 		/** Get the result set. */
-		ResultSet results = Utilities.getResultSet(response);
+		ResultSet results = Utilities.getResultSet(response, (int) response.getResults().getNumFound());
 
 		/** Either deliver the complete result set as on batch, or as a stream. */
 		if (getSolrEndpoint().getDeliveryMode().equals("batch")) {
 
 			Exchange exchange = getEndpoint().createExchange();
-
 			exchange.getIn().setBody(results);
 
 			getAsyncProcessor().process(exchange, new AsyncCallback() {
 				public void done(boolean doneSync) {
-					LOG.trace("Done processing URL");
+					LOG.trace("Done processing sending Batch.");
 				}
 			});
 		}
 		else {
 			/** Iterate through the result set and inject the io objects. */			
 			for (InformationObject io : results.informationobjects) {
-			
 				Exchange exchange = getEndpoint().createExchange();
-
-				/** Set all Solr document fields as headers. */
-				Iterator<Entry<String, Collection<Object>>> it = io.values.entrySet().iterator();
-				while (it.hasNext()) {
-					Entry<String, Collection<Object>> entry = it.next();
-					exchange.getIn().setHeader("ispace.field." + entry.getKey(), entry.getValue());
-				}
 				exchange.getIn().setBody(io);
 
 				getAsyncProcessor().process(exchange, new AsyncCallback() {
 					public void done(boolean doneSync) {
-						LOG.trace("Done processing URL");
+						LOG.trace("Done processing streaming information objects.");
 					}
 				});
 			}
 			
-			for (Facet facet : results.facets) {
-				
+			for (Facet facet : results.facets) {				
 				Exchange exchange = getEndpoint().createExchange();
-
-				/** Set all Solr document fields as headers. */
-				Iterator<Entry<String, Long>> it = facet.values.entrySet().iterator();
-				while (it.hasNext()) {
-					Entry<String, Long> entry = it.next();
-					exchange.getIn().setHeader("ispace.facet." + entry.getKey(), entry.getValue());
-				}
 				exchange.getIn().setBody(facet);
 
 				getAsyncProcessor().process(exchange, new AsyncCallback() {
 					public void done(boolean doneSync) {
-						LOG.trace("Done processing URL");
+						LOG.trace("Done streaming facets.");
 					}
 				});
 			}			
+			
+			/** TODO Should the suggestions and statistics also be injected? */
 		}
 
 		return 0;

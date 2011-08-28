@@ -64,15 +64,16 @@ public class SynonymConsolidator extends SynonymBuffer {
 				for (Object element : (List) value) {					
 					if (element instanceof String) {
 						if (element.equals("") == false) {
-							if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).containsKey(element)) {
+							if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).contains(element)) {
 								/** Known synonym. Replace. */
-								element = acceptedSynonyms.get(category).get(value);
+								int index = acceptedSynonyms.get(category).indexOf(element);
+								element = acceptedSynonyms.get(category).get(index);
 							}
-							else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).containsKey(element)) {
+							else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).contains(element)) {
 								/** Synonym known to be false. Remove. */
 								headers.put(field, null);
 							}
-							else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).containsKey(element)) {
+							else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).contains(element)) {
 								/** Synonym known. */
 								continue;
 							}
@@ -87,15 +88,15 @@ public class SynonymConsolidator extends SynonymBuffer {
 			else {
 				if (value instanceof String) {
 					if (value.equals("") == false) {
-						if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).containsKey(value)) {
+						if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).contains(value)) {
 							/** Known synonym. Replace. */
 							headers.put(field, acceptedSynonyms.get(value));
 						}
-						else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).containsKey(value)) {
+						else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).contains(value)) {
 							/** Synonym known to be false. Remove. */
 							headers.put(field, null);
 						}
-						else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).containsKey(value)) {
+						else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).contains(value)) {
 							/** Synonym known. */
 							continue;
 						}

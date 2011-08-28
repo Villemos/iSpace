@@ -14,6 +14,7 @@ import org.apache.camel.impl.DefaultExchange;
 
 import com.villemos.ispace.api.Facet;
 import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
 
 public class AutoCompletionProxy {
@@ -71,15 +72,15 @@ public class AutoCompletionProxy {
 			lastFacet = facet;
 
 			Exchange exchange = new DefaultExchange(context, ExchangePattern.InOut);
-			exchange.getIn().setHeader(Fields.query, "spell:8");
-			exchange.getIn().setHeader(Fields.stream, null);
-			exchange.getIn().setHeader(Fields.facetquery, true);
-			exchange.getIn().setHeader(Fields.offset, 0);
-			exchange.getIn().setHeader(Fields.rows, rows);
-			exchange.getIn().setHeader(Fields.facetsort, "count");
-			exchange.getIn().setHeader(Fields.facetlimit, -1);
-			exchange.getIn().setHeader(Fields.facetprefix, token);
-			exchange.getIn().setHeader(Fields.facetfield, facet);
+			exchange.getIn().setHeader(Options.query, "spell:*");
+			exchange.getIn().setHeader(Options.stream, null);
+			exchange.getIn().setHeader(Options.facets, true);
+			exchange.getIn().setHeader(Options.offset, 0);
+			exchange.getIn().setHeader(Options.rows, rows);
+			exchange.getIn().setHeader(Options.facetsort, "count");
+			exchange.getIn().setHeader(Options.facetlimit, -1);
+			exchange.getIn().setHeader(Options.facetprefix, token);
+			exchange.getIn().setHeader(Options.facetfield, facet);
 
 			context.createProducerTemplate().send("direct:search", exchange);
 

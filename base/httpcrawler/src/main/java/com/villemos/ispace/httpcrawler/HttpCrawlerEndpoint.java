@@ -49,6 +49,7 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 
 	protected String url = "";
 
+	protected String sourceName = "Http Site";
 	
 	/** Must be set if a proxy is in use. */
 	protected String proxyHost = null;
@@ -220,4 +221,13 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 	public void setConsumerClassName(String consumerClassName) {
 		this.consumerClassName = consumerClassName;
 	}
+
+	public String getSourceName() {
+		return sourceName;
+	}
+	
+	public void setSourceName(String sourceName) {
+		this.sourceName = sourceName;
+	}
+	
 }

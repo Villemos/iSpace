@@ -23,25 +23,23 @@
  */
 package com.villemos.ispace.solr;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.UUID;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.response.FacetField;
-import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +47,11 @@ import org.slf4j.LoggerFactory;
 import com.villemos.ispace.api.Facet;
 import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
-import com.villemos.ispace.core.search.ICallback;
+import com.villemos.ispace.api.ICallback;
+import com.villemos.ispace.api.Statistics;
+import com.villemos.ispace.api.Suggestion;
 
 /**
  * The Solr producer.
@@ -74,15 +75,54 @@ public class SolrProducer extends DefaultProducer {
 	public void process(Exchange exchange) throws Exception {
 
 		/** 
-		 * Either the request holds a queue header field in which case it is 
-		 * interpreted as a request for data, or it contains a facetquery 
-		 * header field in which case it is interpreted as a facet retrieval
-		 * request, or (fall through) it is interpreted as a insert request. */
-		if (exchange.getIn().getHeaders().containsKey(Fields.query) && exchange.getIn().getHeaders().get(Fields.query) != null) {
-			retrieveEntries(exchange);
+		 * The rules for recognizing what to do are
+		 * 
+		 * 1. If the header holds a 'delete' flag, then delete.
+		 * 2. If the body holds a IO then insert. 
+		 * 3. If the header holds a query then retrieve.
+		 *  */
+		if (exchange.getIn().getHeaders().containsKey(Options.delete)) {
+			delete(exchange);
+		}		
+		else if (exchange.getIn().getBody() != null && exchange.getIn().getBody() instanceof InformationObject) {
+			insert((InformationObject) exchange.getIn().getBody());
 		}
-		else {
-			insert(exchange);
+		else if (exchange.getIn().getHeaders().containsKey(Options.query)) {
+			retrieve(exchange);
+		}
+
+		if (exchange.getIn().getHeaders().containsKey(Options.commit)) {
+			commit();
+		}
+	}
+
+	private void delete(Exchange exchange) throws Exception {
+
+		/** The delete can be defined;
+		 * 1. As a query.
+		 * 2. As a URI hold in the 'delete' field. 
+		 * 3. Based on a IO in the body. */
+
+		if (exchange.getIn().getHeaders().containsKey(Options.query) && exchange.getIn().getHeaders().get(Options.query).equals("") == false) {
+			String query = (String) exchange.getIn().getHeaders().get(Options.query);
+			LOG.info("Deleting based on query '" + query + "'.");
+			endpoint.getServer().deleteByQuery(query);
+		}
+		else if (exchange.getIn().getHeaders().containsKey(Options.delete) && exchange.getIn().getHeaders().get(Options.delete).equals("") == false) {
+			String query = "hasUri:\"" + (String) exchange.getIn().getHeaders().get(Options.delete) + "\"";
+			LOG.info("Deleting based on URI based query '" + query + "'.");
+			UpdateResponse response = endpoint.getServer().deleteByQuery(query);
+			if (response.getStatus() == 500) {
+				LOG.error("Failed to delete.");				
+			}
+		}
+		else if (exchange.getIn().getBody() != null && exchange.getIn().getBody() instanceof InformationObject) {
+			String query = "hasUri:" + ((InformationObject) exchange.getIn().getBody()).hasUri;
+			LOG.info("Deleting based on IO based query '" + query + "'.");			
+			UpdateResponse response = endpoint.getServer().deleteByQuery(query);
+			if (response.getStatus() == 500) {
+				LOG.error("Failed to delete.");				
+			}
 		}
 	}
 
@@ -97,37 +137,37 @@ public class SolrProducer extends DefaultProducer {
 	 * @param exchange
 	 * @throws Exception
 	 */
-	protected void insert(Exchange exchange) throws Exception {
+	protected void insert(InformationObject io) throws Exception {
 
 		/** The document we will be storing. */
 		SolrInputDocument document = new SolrInputDocument();
-		Map<String, Object> headers = exchange.getIn().getHeaders();
 
-		/** 
-		 * Iterate through all headers. Each field with a name 'ispace.field.[name]' will
-		 * be extracted and set on the Solr document, i.e. stored in the repository. */
-		List<String> filteredHeader = filterHeaders(headers, "ispace.field.");
+		/** Add the static fields. */
+		document.setField("hasUri", io.hasUri);
+		document.setField("wasStoredAt", io.wasStoredAt);
+		document.setField("isAttachedTo", io.isAttachedTo);   
+		document.setField("fromSource", io.fromSource);
+		document.setField("ofMimeType", io.ofMimeType);
+		document.setField("ofEntityType", io.ofEntityType);
+		document.setField("hasTitle", io.hasTitle);
+		document.setField("withReferenceId", io.withReferenceId);
+		document.setField("withIssue", io.withIssue);
+		document.setField("withRevision", io.withRevision);
+		document.setField("isPartOf", io.isPartOf);
+		document.setField("hasPart", io.hasPart);
+		document.setField("withRawText", io.withRawText);
+		document.setField("withAttachedLog", io.withAttachedLog);
 
-		for (String field : filteredHeader) {
-			setFieldValue(document, field.replaceAll("ispace.field.", ""), headers.get(field));
-		} 
-
-		/** Make sure the document holds an ID. */
-		if (endpoint.getAssignId() == true) {
-			if (filteredHeader.contains(endpoint.getUniqueidFieldName()) == false) {
-				document.addField(endpoint.getContentFieldName(), UUID.randomUUID().toString());
-			}
+		/** Add the dynamic fields. */
+		Iterator<Entry<String, Object>> it = io.dynamic.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, Object> entry = it.next();
+			document.setField(entry.getKey() + "_s", entry.getValue());
 		}
 
-		/** Set the boost factor of the document, if specified in the header. */
-		if (headers.containsKey("ispace.boostfactor")) {
-			document.setDocumentBoost((Float) headers.get("ispace.boostfactor"));
-		}
+		document.setDocumentBoost(io.boost);
 
-		/** Set the body as a field. The body is expected to be a String. */
-		document.setField(endpoint.getContentFieldName(), exchange.getIn().getBody());
-
-		LOG.info("Storing document '" + headers.get(Fields.hasUri) + "'");
+		LOG.info("Storing document '" + io.hasUri + "'");
 
 		/** Send the document to the SOLR server. */
 		UpdateResponse response = endpoint.getServer().add(document);
@@ -135,13 +175,19 @@ public class SolrProducer extends DefaultProducer {
 			LOG.error("Failed to submit the document to the SOLR server. Server returned status code '" + response.getStatus() + "'.");
 		}
 
-		/** Force commit if the end point has been configured to force commits, or if
-		 * the exchange specifies that it should be forced. */
-		if (endpoint.getForceCommit() == true || headers.containsKey("forcecommit")) {
-			endpoint.getServer().commit();
+		/** Store the comments. */
+		for (InformationObject comment : io.comments) {
+			insert(comment);
 		}
 	}
 
+	protected void commit() throws SolrServerException, IOException {
+		LOG.info("Forcing commit of changes.");
+		UpdateResponse commitResponse = endpoint.getServer().commit();
+		if (commitResponse.getStatus() == 500) {
+			LOG.error("Failed to commit the document to the SOLR server. Server returned status code '" + commitResponse.getStatus() + "'.");
+		}
+	}
 
 
 	/**
@@ -191,29 +237,33 @@ public class SolrProducer extends DefaultProducer {
 	 * @throws InvocationTargetException 
 	 * @throws IllegalAccessException 
 	 * @throws IllegalArgumentException 
+	 * @throws RemoteException 
 	 */
-	protected void retrieveEntries(Exchange exchange) throws SolrServerException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+	protected void retrieve(Exchange exchange) throws SolrServerException, IllegalArgumentException, IllegalAccessException, InvocationTargetException, RemoteException {
 
 		/** Configure the request. 
 		 * 
-		 * Two keywords are supported
-		 *   NOW. Will be replaced with a long value of the current time. 
+		 * One keywords are supported 
 		 *   FROMLAST. Will be replaced with the timestamp of the last retrieval (initial is 0). 
 		 */	
-		String queryString = ((String)exchange.getIn().getHeaders().get(Fields.query)).trim();
-		queryString = queryString.replaceAll("NOW", Long.toString((new Date()).getTime())).replaceAll("FROMLAST", Long.toString(lastRetrievalTime));
+		String queryString = ((String)exchange.getIn().getHeaders().get(Options.query)).trim();
+		queryString = queryString.replaceAll("FROMLAST", Long.toString(lastRetrievalTime));
 		SolrQuery query = new SolrQuery(queryString);
 		configureQuery(query, exchange);
 
+		if (queryString.equals("*:*")) {
+			query.setQueryType("basic");
+		}
+
 		/** If we are asked for facets, then add the facets. */
-		if (exchange.getIn().getHeader(Fields.facetquery) != null) {
+		if (exchange.getIn().getHeaders().containsKey(Options.facets)) {
 			query.setFacet(true);
-			query.addFacetField(Fields.ofMimeType);
-			query.addFacetField(Fields.fromSource);
-			query.addFacetField(Fields.ofEntityType);
-			query.addFacetField(Fields.withReferenceId);
-			query.addFacetField(Fields.withIssue);
-			query.addFacetField(Fields.withRevision);
+			query.addFacetField(Fields.ofMimeType.replaceAll("ispace.field.", ""));
+			query.addFacetField(Fields.fromSource.replaceAll("ispace.field.", ""));
+			query.addFacetField(Fields.ofEntityType.replaceAll("ispace.field.", ""));
+			query.addFacetField(Fields.withReferenceId.replaceAll("ispace.field.", ""));
+			query.addFacetField(Fields.withIssue.replaceAll("ispace.field.", ""));
+			query.addFacetField(Fields.withRevision.replaceAll("ispace.field.", ""));
 		}
 
 		/** Search and set result set. Notice that this will return the results upto the 
@@ -222,30 +272,52 @@ public class SolrProducer extends DefaultProducer {
 		/** Data is either returned as a batch contained in the body of the exchange, or as
 		 * a stream send to the callback object in the body. The exchange header field 
 		 * 'ispace.stream' is used to indicate which delivery mode is used. */
-		if (exchange.getIn().getHeaders().containsKey(Fields.stream) == false || exchange.getIn().getHeaders().get(Fields.stream) == null) {
+		if (exchange.getIn().getHeaders().containsKey(Options.stream) == false || exchange.getIn().getHeaders().get(Options.stream) == null) {
 
 			QueryResponse response = endpoint.getServer().query(query);
 			if (response.getStatus() != 0) {
 				log.error("Failed to execute retrieval request. Failed with status '" + response.getStatus() + "'.");
 			}
 
-			if (exchange.getIn().getHeaders().containsKey(Fields.count)) {
-				exchange.getOut().setBody((int) response.getResults().getNumFound());
+			if (exchange.getIn().getHeaders().containsKey(Options.count)) {
+				exchange.getOut().getHeaders().put(Options.count, response.getResults().getNumFound());
 			} 
 			else {
-				exchange.getOut().setBody(Utilities.getResultSet(response));
+				exchange.getOut().getHeaders().put(Options.count, (int) response.getResults().getNumFound());
+				ResultSet results = Utilities.getResultSet(response, query.getRows());
+
+				/** Get attached comments. */
+				if (exchange.getIn().getHeaders().containsKey(Options.comments)) {					
+					for (InformationObject io : results.informationobjects) {
+						SolrQuery commentQuery = new SolrQuery(Fields.ofEntityType.replaceAll("ispace.field.", "") + ":\"Comment\" AND " + Fields.isAttachedTo.replaceAll("ispace.field.", "") + ":\"" + io.hasUri + "\"");
+						commentQuery.setQueryType("basic");
+						commentQuery.setRows(1000);
+						QueryResponse commentsResponse = endpoint.getServer().query(commentQuery);
+
+						ResultSet comments = Utilities.getResultSet(commentsResponse, 0);
+						for (InformationObject comment : comments.informationobjects) {
+							io.comments.add(comment);
+						}
+
+					}
+				}
+
+				exchange.getOut().setBody(results);
 			}
 		}
 		else {
 			/** Stream. */
-			ICallback callback = (ICallback) exchange.getIn().getHeader(Fields.stream);
+			ICallback callback = (ICallback) exchange.getIn().getHeader(Options.stream);
 
+			/***/
+			Statistics statistics = new Statistics();
+			
 			int maxNumberOfHits = query.getRows();
 
 			/** When streaming, we retrieve in chunks. */
-			int streamBatchSize = 10;
+			int streamBatchSize = 100 > maxNumberOfHits ? maxNumberOfHits : 100;
 			query.setRows(streamBatchSize);
-			int index = query.getStart();
+			Integer index = query.getStart() == null ? 0 : query.getStart();
 
 			QueryResponse response = endpoint.getServer().query(query);
 			if (response.getStatus() != 0) {
@@ -257,24 +329,61 @@ public class SolrProducer extends DefaultProducer {
 				numberOfHits = maxNumberOfHits;
 			}
 
-			boolean hasDeliveredFacets = false;
+			boolean deliverOnes = false;
 
 			do {				
-				ResultSet set = Utilities.getResultSet(response);
-
-				for(InformationObject document : set.informationobjects){
-					callback.receive(document);
-				}
-				if (hasDeliveredFacets == false) {
+				ResultSet set = Utilities.getResultSet(response, maxNumberOfHits);
+				
+				/** Update the statistics. */
+				statistics.maxScore = statistics.maxScore > set.statistics.maxScore ? statistics.maxScore : set.statistics.maxScore;
+				statistics.totalFound = set.statistics.totalFound;
+				statistics.totalRequested = set.statistics.totalRequested;
+				statistics.queryTime += set.statistics.queryTime;
+				statistics.totalReturned += set.statistics.totalReturned;
+				
+				/** Deliver latest statistics. */
+				callback.receive(statistics);
+				
+				/** Deliver the data that is the same for each sequential query, i.e. facets and suggestions. */
+				if (deliverOnes == false) {
 					for(Facet facet : set.facets){
 						callback.receive(facet);
 					}
-					hasDeliveredFacets = true;
+					for(Suggestion suggestion : set.suggestions){
+						callback.receive(suggestion);
+					}
+
+					deliverOnes = true;
+				}
+
+				/** Deliver the found information objects. */
+				for(InformationObject document : set.informationobjects){
+
+					/** Get attached comments. */
+					if (exchange.getIn().getHeaders().containsKey(Options.comments)) {					
+						SolrQuery commentQuery = new SolrQuery(Fields.ofEntityType.replaceAll("ispace.field.", "") + ":\"Comment\" AND " + Fields.isAttachedTo.replaceAll("ispace.field.", "") + ":\"" + document.hasUri + "\"");
+						commentQuery.setQueryType("basic");
+						commentQuery.setRows(1000);
+						QueryResponse commentsResponse = endpoint.getServer().query(commentQuery);
+
+						ResultSet comments = Utilities.getResultSet(commentsResponse, 0);
+						for (InformationObject comment : comments.informationobjects) {
+							document.comments.add(comment);
+						}
+					}
+
+					callback.receive(document);
 				}
 				index += streamBatchSize;				
 
-				if (numberOfHits > index) {
+				if (numberOfHits > index && statistics.totalReturned < statistics.totalFound) {
 					query.setStart(index);
+					
+					long numberMissing = numberOfHits - statistics.totalReturned; 
+					if ( numberMissing < streamBatchSize ) {
+						query.setRows((int) numberMissing);
+					}
+					
 					response = endpoint.getServer().query(query);
 				}
 				else {
@@ -286,16 +395,18 @@ public class SolrProducer extends DefaultProducer {
 
 
 	private void configureQuery(SolrQuery query, Exchange exchange) throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		/** Set the default values. May be overridden by later settings. */
 		query.setRows(1000);
-
+		query.setSortField("score", ORDER.desc);
+		
 		/** We per default always set highlighting. */
 		query.setHighlight(true).setHighlightSnippets(1);
-		query.setParam("hl.fl", Fields.withRawText);
-
+		query.setParam("hl.fl", Fields.withRawText.replaceAll("ispace.field.", ""));
+		
 		/** The header of the exchange can be used to set query options. */
 		Map<String, Object> headers = exchange.getIn().getHeaders();
 		for (String key : filterHeaders(headers, "ispace.option.")) {
-			Object value = headers.get("ispace.option." + key); 
+			Object value = headers.get(key); 
 
 			if (value instanceof List) {
 
@@ -318,6 +429,7 @@ public class SolrProducer extends DefaultProducer {
 			}
 			else {
 				/** Find the method we can use to 'set' the value. */
+				key = key.replaceAll("ispace.option.", "");
 				for (Method method : query.getClass().getMethods() ) {
 					if (method.getName().equalsIgnoreCase("set" + key) || method.getName().equalsIgnoreCase("add" + key)) {
 						if (method.getParameterTypes().length > 1) {
