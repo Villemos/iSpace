@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.camel.Body;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.Handler;
 import org.apache.camel.impl.DefaultExchange;
 
 import com.villemos.ispace.api.Synonym;
@@ -78,6 +79,7 @@ public class SynonymBuffer {
 		context.createProducerTemplate().send("direct:store", exchange);
 	}
 
+	@Handler
 	public synchronized void registerSynonym(@Body Synonym synonym) {
 		if (synonym.hasState.equals("accepted")) {
 			if (acceptedSynonyms.containsKey(synonym.ofCategory) == false) {

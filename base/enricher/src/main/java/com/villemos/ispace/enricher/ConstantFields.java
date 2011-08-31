@@ -28,8 +28,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.camel.Body;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
+
+import com.villemos.ispace.api.InformationObject;
 
 /** Class for adding a number of fixed fields to the document. The fixed fields
  * are configured as part of the system setup. Typically this should be used to
@@ -42,11 +45,17 @@ public class ConstantFields {
 	
 	/** Processor method of the bean. */
 	@Handler
-	public void addFields(@Headers Map<String, String> headerFields) {
+	public void addFields(@Body InformationObject io) {
 		Iterator<Entry<String, String>> it = constantFields.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, String> entry = it.next();
-			headerFields.put(entry.getKey(), entry.getValue());
+			
+			try {
+				io.getClass().getField(entry.getKey());
+			}
+			catch (Exception e) {
+				io.dynamic.put(entry.getKey(), entry.getValue());
+			}
 		}
 	}
 

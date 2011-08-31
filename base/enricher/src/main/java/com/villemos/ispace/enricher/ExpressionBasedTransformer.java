@@ -23,14 +23,27 @@
  */
 package com.villemos.ispace.enricher;
 
+import java.lang.reflect.Field;
+
+import org.apache.camel.Body;
 import org.apache.camel.Exchange;
+
+import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.InformationObject;
 
 public class ExpressionBasedTransformer {
 
 	protected String expression = "\\<.*?\\>";	
+	
+	protected String fieldName = Fields.withRawText;
+	
 	protected String replacement = "";
 	
-	public void transform(Exchange exchange) {
-		exchange.getIn().setBody(( (String) exchange.getIn().getBody()).replaceAll(expression, replacement).replaceAll("\\s+", " "));
+	public void transform(@Body InformationObject io) {
+		
+		try {
+			Field field = io.getClass().getField(fieldName);
+			
+		}
 	}
 }

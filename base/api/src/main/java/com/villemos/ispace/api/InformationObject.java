@@ -24,9 +24,10 @@
 package com.villemos.ispace.api;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.collections.MultiHashMap;
+import org.apache.commons.collections.MultiMap;
 
 /**
  * Class holding an InformationObject, being a entry in a repository.
@@ -67,8 +68,8 @@ public class InformationObject {
 	public float score;
 	
 	/** Fields for specific systems. Are not used by the core part of the system. */
-	public Map<String, Object> dynamic = new HashMap<String, Object>();
-
+	public MultiMap dynamic = new MultiHashMap();
+	
 	/** Extract(s) from the main content field, in which the search criterion occurs. Will be
 	 * ignored in all storage requests. */
 	public List<String> highlight = new ArrayList<String>();

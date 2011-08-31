@@ -34,7 +34,7 @@ import org.apache.camel.Headers;
 
 import com.villemos.ispace.api.Fields;
 
-public class PatternBasedEnricher {
+public class PatternBasedEnricher extends RegularExpressionBuffer{
 
 	protected String headerFieldName;
 	

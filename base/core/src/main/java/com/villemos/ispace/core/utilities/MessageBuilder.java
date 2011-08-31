@@ -27,16 +27,20 @@ public class MessageBuilder {
 	public static Message createAcronymMessage(String acronym, String definition, String extractedFrom) {
 		Message message = new DefaultMessage();		
 		
-		message.setHeader(Fields.hasUri, "ispace:/acronym/" + acronym + "/" + definition);
-		message.setHeader(Fields.hasTitle, definition + " (" + acronym + ")");
-		message.setHeader(Fields.ofMimeType, "Virtual");
-		message.setHeader(Fields.ofEntityType, "Acronym");
-		message.setHeader(Fields.withRawText, definition);
-		message.setHeader(Fields.withAttachedLog, "Acronym extracted from '" + extractedFrom + "'.");
+		InformationObject io = new InformationObject();
+		
+		
+		io.hasUri = "ispace:/acronym/" + acronym + "/" + definition;
+		io.hasTitle = definition + " (" + acronym + ")";
+		io.ofMimeType = "Virtual";
+		io.ofEntityType = "Acronym";
+		io.withRawText = definition;
+		io.withAttachedLog.add("Acronym extracted from '" + extractedFrom + "'.");
 
 		message.setHeader("ispace.boostfactor" + 0,1L);
+		message.setBody(io);
 
-		return null;
+		return message;
 	}
 
 	public static Exchange buildExchange(InformationObject io, CamelContext context) {

@@ -77,7 +77,8 @@
 		<junit.version>3.8.2</junit.version>
 		<camel.version>2.7.0</camel.version>
 		<activemq.version>5.4.2</activemq.version>
-		<commonslogging.version>1.1.1</commonslogging.version>
+		<commons.logging.version>1.1.1</commons.logging.version>
+		<commons.collections.version>3.2.1</commons.collections.version>
 		<slf4j.version>1.5.8</slf4j.version>
 		<maven-compiler-plugin.version>2.3.2</maven-compiler-plugin.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -96,6 +97,12 @@
 
 	<dependencyManagement>
 		<dependencies>
+
+			<dependency>
+				<groupId>commons-collections</groupId>
+				<artifactId>commons-collections</artifactId>
+				<version>${commons.collections.version}</version>
+			</dependency>
 
 			<dependency>
 				<groupId>org.apache.httpcomponents</groupId>
@@ -252,7 +259,7 @@
 			<dependency>
 				<groupId>commons-logging</groupId>
 				<artifactId>commons-logging</artifactId>
-				<version>${commonslogging.version}</version>
+				<version>${commons.logging.version}</version>
 			</dependency>
 
 			<dependency>

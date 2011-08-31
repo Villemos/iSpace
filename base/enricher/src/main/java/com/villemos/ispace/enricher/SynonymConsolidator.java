@@ -24,93 +24,57 @@
 package com.villemos.ispace.enricher;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.InformationObject;
 
-public class SynonymConsolidator extends SynonymBuffer {
+public class SynonymConsolidator {
 
-	/** List of fields which are discrete and should be consolidated. */
+	/** List of keys in the 'dynamic fields' which are discrete and should be consolidated. */
 	protected List<String> discreteFields = new ArrayList<String>();
 
-	@Handler
-	public void process(@Headers Map<String, Object> headers, CamelContext context) {
+	protected SynonymBuffer synonymBuffer = null;
 
-		String uri = (String) headers.get(Fields.hasUri);
+	@Handler
+	public void process(@Headers InformationObject io, CamelContext context) {
 
 		/** Iterate through all fields known to be synonym fields. */
 		for (String field : discreteFields) {
 
-			/** If field doesnt exist, then continue. */
-			if (headers.containsKey(field) == false) {
-				continue;
-			}
-
-			String category = fieldsToEntityType.get(field);
+			String category = synonymBuffer.fieldsToEntityType.get(field);
 
 			/** Get the value. */
-			Object value = headers.get(field);
-			if (value == null) {
-				continue;
-			}
-
-			if (value instanceof List) {
-
-				for (Object element : (List) value) {					
-					if (element instanceof String) {
-						if (element.equals("") == false) {
-							if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).contains(element)) {
-								/** Known synonym. Replace. */
-								int index = acceptedSynonyms.get(category).indexOf(element);
-								element = acceptedSynonyms.get(category).get(index);
-							}
-							else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).contains(element)) {
-								/** Synonym known to be false. Remove. */
-								headers.put(field, null);
-							}
-							else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).contains(element)) {
-								/** Synonym known. */
-								continue;
-							}
-							else {
-								/** New synonym. Register. */
-								registerNewSynonym((String) element, category, uri, context);
-							}
-						}
-					}
-				}
-			}
-			else {
-				if (value instanceof String) {
-					if (value.equals("") == false) {
-						if (acceptedSynonyms.containsKey(category) && acceptedSynonyms.get(category).contains(value)) {
+			if (io.dynamic.get(field) != null) {
+				Collection value = (Collection) io.dynamic.get(field);
+				for (Object element : value) {					
+					if (element.equals("") == false) {
+						if (synonymBuffer.acceptedSynonyms.containsKey(category) && synonymBuffer.acceptedSynonyms.get(category).contains(element)) {
 							/** Known synonym. Replace. */
-							headers.put(field, acceptedSynonyms.get(value));
+							int index = synonymBuffer.acceptedSynonyms.get(category).indexOf(element);
+							element = synonymBuffer.acceptedSynonyms.get(category).get(index);
 						}
-						else if (removeSynonyms.containsKey(category) && removeSynonyms.get(category).contains(value)) {
+						else if (synonymBuffer.removeSynonyms.containsKey(category) && synonymBuffer.removeSynonyms.get(category).contains(element)) {
 							/** Synonym known to be false. Remove. */
-							headers.put(field, null);
+							value.remove(element);
 						}
-						else if (knownSynonyms.containsKey(category) && knownSynonyms.get(category).contains(value)) {
+						else if (synonymBuffer.knownSynonyms.containsKey(category) && synonymBuffer.knownSynonyms.get(category).contains(element)) {
 							/** Synonym known. */
 							continue;
 						}
 						else {
 							/** New synonym. Register. */
-							registerNewSynonym((String) value, category, uri, context);
+							synonymBuffer.registerNewSynonym((String) element, category, io.hasUri, context);
 						}
 					}
 				}
-			}					
+			}		
 		}
 	}
-
-
 
 	public List<String> getDiscreteFields() {
 		return discreteFields;
@@ -120,6 +84,4 @@ public class SynonymConsolidator extends SynonymBuffer {
 	public void setDiscreteFields(List<String> discreteFields) {
 		this.discreteFields = discreteFields;
 	}
-
-
 }

@@ -25,6 +25,9 @@ package com.villemos.ispace.excell;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +53,7 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 	private final ExcellEndpoint endpoint;
 
 	protected long lastPollTime = 0;
-	
+
 	public ExcellConsumer(ExcellEndpoint endpoint, Processor processor) {
 		super(endpoint, processor);
 		this.endpoint = endpoint;
@@ -59,111 +62,235 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 	@Override
 	protected int poll() throws Exception {
 
-		Map<String, List<Object>> data = new HashMap<String, List<Object>>();
-
-		Exchange exchange = getEndpoint().createExchange();
-
 		/** Read input file. */
 		File input = new File(endpoint.getFile());
-		
+
+		if (input.exists() == false) {
+			LOG.warn("File '" + input.getAbsolutePath() + "' does not exist.");
+			return 0;
+		}
+
 		/** Did it change since last time?*/
 		if (input.lastModified() == lastPollTime) {
 			LOG.trace("Excell crawler ignoring input file. File has not changed.");
 			return 1;
 		}
 		lastPollTime = input.lastModified();
-		
+
+		List<Object> dataList = new ArrayList<Object>();
+
 		try {
 			Workbook workbook = Workbook.getWorkbook(input);
 
 			for (String sheetName : workbook.getSheetNames()) {
 
-				List<Object> dataList = new ArrayList<Object>();
-
-				if (sheetName.equals("header")) {
+				if (sheetName.equals("metadata")) {
 					continue;
 				}
 
 				Sheet bodySheet = workbook.getSheet(sheetName);
 
-				/** Read the class name. */
-				String className = bodySheet.getCell(0, 1).getContents().toString();
+				/** Read the sheet headers. */
+				Map<Integer, String> fields = new HashMap<Integer, String>();
+				int column = 1;
+				while (column < bodySheet.getColumns()) {
+					fields.put(column, bodySheet.getCell(column, 0).getContents().toString());	
+					column++;
+				}				
 
-				if (className.contains("java.lang.String") == false) {
+				/** Go through all rows. */
+				int row = 1;
+				while (row < bodySheet.getRows()) {
 
-					/** Get the class specification of the class to use. May be a specialized class. */
+					/** Read the class name. */
+					String className = bodySheet.getCell(0, 1).getContents().toString();
 
-					/** Read the sheet headers. */
-					Map<Integer, String> fields = new HashMap<Integer, String>();
-					int column = 1;
+					Class cls = Class.forName(className);
+					Object instance = cls.newInstance();
+
+					column = 1;
 					while (column < bodySheet.getColumns()) {
-						fields.put(column, bodySheet.getCell(column, 0).getContents().toString());	
-						column++;
-					}				
-
-					int row = 1;
-					while (row < bodySheet.getRows()) {
-						Class cls = Class.forName(className);
-						Object instance = cls.newInstance();
-						column = 1;
-						while (column < bodySheet.getColumns()) {
+						try {
 							Field field = instance.getClass().getField(fields.get(column));
 							field.setAccessible(true);
-							field.set(instance, bodySheet.getCell(column, row).getContents());
-							column++;
-						}
 
-						dataList.add(instance);
+							if (field.get(instance) instanceof List) {
 
-						row++;
-					}
-				}
-				else {
-					int row = 1;
-					while (row < bodySheet.getRows()) {
-						if (bodySheet.getCell(0, row).getContents().equals("")) {
-							break;
-						}
+								/** Detect method to use to set the value. */
+								Type type = field.getGenericType();
+								ParameterizedType pt = (ParameterizedType) type;
 
-						dataList.add(bodySheet.getCell(1, row).getContents().toString());
+								/** Find the method. */
+								Type listType = pt.getActualTypeArguments()[0];
 
-						row++;
-					}
-				}
+								try {
 
-				if (endpoint.isStream()) {
+									for (String valueStr : bodySheet.getCell(column, row).getContents().split("\\|\\|")) {
+										Method add = null;
+										Object value = null;
+										if (listType.toString().contains(String.class.getName())) {
+											value = valueStr;
+											add = List.class.getDeclaredMethod("add", Object.class);
+										}
+										else if (listType.getClass().isAssignableFrom(Long.class)) {
+											value = Long.parseLong(valueStr);
+											add = List.class.getDeclaredMethod("add", Long.class);
+										}
+										else if (listType.getClass().isAssignableFrom(Float.class)) {
+											value = Float.parseFloat(valueStr);
+											add = List.class.getDeclaredMethod("add", Float.class);
+										}
+										else if (listType.getClass().isAssignableFrom(Integer.class)) {
+											value = Integer.parseInt(valueStr);
+											add = List.class.getDeclaredMethod("add", Integer.class);
+										}
+										else if (listType.getClass().isAssignableFrom(Double.class)) {
+											value = Double.parseDouble(valueStr);
+											add = List.class.getDeclaredMethod("add", Double.class);
+										}
+										else {
 
-					for (Object body : dataList) {
-						Exchange newExchange = getEndpoint().createExchange();
-						newExchange.getIn().setBody(body);
+										}
 
-						getAsyncProcessor().process(newExchange, new AsyncCallback() {
-							public void done(boolean doneSync) {
-								LOG.trace("Done processing URL");
+										add.invoke(field.get(instance), value);
+									}
+								}
+								catch(Exception e) {
+									e.printStackTrace();
+								}
 							}
-						});
+							else if (field.get(instance) instanceof Map) {
+								/** Detect method to use to set the value. */
+								Type type = field.getGenericType();
+								ParameterizedType pt = (ParameterizedType) type;
+
+								/** Find the method. */
+								Type listType = pt.getActualTypeArguments()[1];
+
+								try {
+									String[] elements = bodySheet.getCell(column, row).getContents().split("=");
+									String key = elements[0];
+									String valueStr = elements[1]; 									
+
+									Method put = null;
+									Object value = null;
+									
+									Class params[] = new Class[2];
+									params[0] = String.class;
+
+									String valueElements[] = valueStr.split("\\|\\|"); 
+									if (valueElements.length > 1) {
+										value = new ArrayList<String>();
+										for (String element : valueElements) {
+											((List)value).add(element);
+										}
+										params[0] = Object.class;
+										params[1] = Object.class;
+										put = Map.class.getDeclaredMethod("put", params);
+
+									}
+									else if (listType.toString().contains(String.class.getName())) {
+										value = valueStr;
+										params[1] = String.class;
+										put = List.class.getDeclaredMethod("put", params);
+									}
+									else if (listType.getClass().isAssignableFrom(Long.class)) {
+										value = Long.parseLong(valueStr);
+										params[1] = Long.class;
+										put = List.class.getDeclaredMethod("put", params);
+									}
+									else if (listType.getClass().isAssignableFrom(Float.class)) {
+										value = Float.parseFloat(valueStr);
+										params[1] = Float.class;
+										put = List.class.getDeclaredMethod("put", params);
+									}
+									else if (listType.getClass().isAssignableFrom(Integer.class)) {
+										value = Integer.parseInt(valueStr);
+										params[1] = Integer.class;
+										put = List.class.getDeclaredMethod("put", params);
+									}
+									else if (listType.getClass().isAssignableFrom(Double.class)) {
+										value = Double.parseDouble(valueStr);
+										params[1] = Double.class;
+										put = List.class.getDeclaredMethod("put", params);
+									}
+									else {
+
+									}
+
+									Object keyValue[] = new Object[2];
+									keyValue[0] = key;
+									keyValue[1] = value;
+									put.invoke(field.get(instance), keyValue);
+								}
+								catch(Exception e) {
+									e.printStackTrace();
+								}								
+							}
+							else {
+								if (field.getType().isAssignableFrom(String.class)) {
+									field.set(instance, bodySheet.getCell(column, row).getContents());								
+								}
+								else if (field.getType().isAssignableFrom(Long.class)) {
+									field.set(instance, Long.parseLong(bodySheet.getCell(column, row).getContents()));
+								}
+								else if (field.getType().isAssignableFrom(Float.class)) {
+									field.set(instance, Float.parseFloat(bodySheet.getCell(column, row).getContents()));
+								}
+								else if (field.getType().isAssignableFrom(Integer.class)) {
+									field.set(instance, Integer.parseInt(bodySheet.getCell(column, row).getContents()));
+								}
+								else if (field.getType().isAssignableFrom(Double.class)) {
+									field.set(instance, Double.parseDouble(bodySheet.getCell(column, row).getContents()));
+								}
+								else {
+
+								}
+							}
+						}
+						catch(Exception e) {
+							/** Exceptions will be thrown if this object doesnt have the field 
+							 * name. Catch and ignore.*/
+						}
+
+						column++;
 					}
 
-				}
-				else {
-					data.put(sheetName, dataList);
-				}
-			}
+					dataList.add(instance);
 
-			if (endpoint.isStream() == false) {
-				exchange.getIn().setBody(data);
+					row++;
 
-				getAsyncProcessor().process(exchange, new AsyncCallback() {
-					public void done(boolean doneSync) {
-						LOG.trace("Done processing URL");
-					}
-				});
+				}
 			}
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 		}
 
+		if (endpoint.isStream()) {
+
+			for (Object body : dataList) {
+				Exchange newExchange = getEndpoint().createExchange();
+				newExchange.getIn().setBody(body);
+
+				getAsyncProcessor().process(newExchange, new AsyncCallback() {
+					public void done(boolean doneSync) {
+						LOG.trace("Done processing URL");
+					}
+				});
+			}
+
+		}
+		else {
+			Exchange newExchange = getEndpoint().createExchange();
+			newExchange.getIn().setBody(dataList);
+
+			getAsyncProcessor().process(newExchange, new AsyncCallback() {
+				public void done(boolean doneSync) {
+					LOG.trace("Done processing URL");
+				}
+			});
+		}
 		return 1;
 	}
 }

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.camel.Message;
+import org.apache.camel.impl.DefaultMessage;
 import org.ontoware.rdf2go.RDF2Go;
 import org.ontoware.rdf2go.model.Model;
 import org.ontoware.rdf2go.model.node.URI;
@@ -66,6 +67,7 @@ import org.semanticdesktop.aperture.subcrawler.SubCrawlerRegistry;
 import org.semanticdesktop.aperture.subcrawler.impl.DefaultSubCrawlerRegistry;
 
 import com.villemos.ispace.aperture.processor.IProcessor;
+import com.villemos.ispace.api.InformationObject;
 import com.villemos.ispace.core.utilities.MessageBuilder;
 
 import java.io.BufferedInputStream;
@@ -151,18 +153,23 @@ public class ExtendedCrawlerHandler implements CrawlerHandler, RDFContainerFacto
 			}
 		}
 
+		InformationObject io = new InformationObject();
+		
 		/** Build a message and set it on the message list returned from the processor. */
-		String hasTitle = "";
-		String hasUri = "";
 		if (((FileDataObject) object).getFile() != null) {
-			hasTitle = ((FileDataObject) object).getFile().getName();
-			hasUri = ((FileDataObject) object).getFile().getAbsolutePath();
+			io.hasTitle = ((FileDataObject) object).getFile().getName();
+			io.hasUri = ((FileDataObject) object).getFile().getAbsolutePath();
 		} else {
-			hasTitle = ((FileDataObject) object).getID().toString();
-			hasUri = ((FileDataObject) object).getID().toString();
+			io.hasTitle = ((FileDataObject) object).getID().toString();
+			io.hasUri = ((FileDataObject) object).getID().toString();
 		}
 
-		Message message = MessageBuilder.createIoMessage(hasUri, hasTitle, mimetype, "File System", fullText);
+		io.ofMimeType = mimetype;
+		io.fromSource = "File System";
+		io.withRawText = fullText;
+		
+		Message message = new DefaultMessage();
+		message.setBody(io);
 		messages.add(message);
 
 		/** Add all messages that the specific processors may be able to extract from this file. */
