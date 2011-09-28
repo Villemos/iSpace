@@ -376,7 +376,7 @@
      <str name="echoParams">explicit</str>
      <float name="tie">0.01</float>
 
-     <str name="qf">withRawText hasTitle^4 hasTitleText^2 hasReferenceIdText^2 spell</str>
+     <str name="qf">withRawText hasTitle^4 hasTitleText__^2 hasReferenceIdText__^2 spell__ *_s *_t *_t__</str>
 
      <!--  str name="bf"></str -->
 
@@ -419,7 +419,7 @@
     <lst name="spellchecker">
       <str name="name">default</str>
       <str name="classname">solr.IndexBasedSpellChecker</str>
-      <str name="field">spell</str>
+      <str name="field">spell__</str>
       <str name="spellcheckIndexDir">./spellcheck</str>
       <str name="accuracy">0.8</str>
       <str name="buildOnCommit">true</str>

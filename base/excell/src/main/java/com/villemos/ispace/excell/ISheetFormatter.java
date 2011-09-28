@@ -21,25 +21,12 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.enricher;
+package com.villemos.ispace.excell;
 
-import java.lang.reflect.Field;
+import java.util.Collection;
 
-import org.apache.camel.Body;
-import org.apache.camel.Exchange;
+import jxl.write.WritableSheet;
 
-import com.villemos.ispace.api.Fields;
-import com.villemos.ispace.api.InformationObject;
-
-public class ExpressionBasedTransformer {
-
-	protected String expression = "\\<.*?\\>";	
-	
-	protected String fieldName = Fields.withRawText;
-	
-	protected String replacement = "";
-	
-	public void transform(@Body InformationObject io) {
-		
-	}
+public interface ISheetFormatter {
+	public void add(Collection objects, WritableSheet sheet);
 }

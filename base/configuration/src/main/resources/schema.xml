@@ -145,50 +145,60 @@
    <field name="hasUri" type="string" indexed="true" stored="true" multiValued="false" required="true" omitNorms="true"/>
    <field name="wasStoredAt" type="date" indexed="true" stored="true" default="NOW" multiValued="false" required="true" omitNorms="true"/>
    <field name="isAttachedTo" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>   
-   <field name="fromSource" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="fromSourceText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="ofMimeType" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="isEntityType" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="hasTitle" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="hasTitleText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="withReferenceId" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="withReferenceIdText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="withIssue" type="slong" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="withRevision" type="slong" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="isPartOf" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>   
-   <field name="withRawText" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
+   <field name="fromSource" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="fromSourceText__" type="text" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="ofMimeType" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="ofEntityType" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="hasTitle" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="hasTitleText__" type="text" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withReferenceId" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withReferenceIdText__" type="text" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withIssue" type="slong" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withRevision" type="slong" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="isPartOf" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>   
+   <field name="hasPart" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <field name="withRawText" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="withAttachedLog" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
 
    <!-- Synonym fields. -->
-   <field name="hasRootValue" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="hasState" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="isApplicableToField" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <field name="hasRootValue" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="hasState" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="ofCategory" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
 
+   <!-- Taxonomy fields. -->
+	<field name="parentEntity" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+	<field name="childEntity" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>  
 
-   <!-- Tailoring. Add new fields here. Dont forget the copy fields (see below)! --> 
-
-   
-   <!-- Spell and autocomplete. Field for spell checking. Copy field from a number of other fields. -->
-   <field name="spell" type="textSpell" indexed="true" stored="true" multiValued="true"/>
+   <!-- Catch all field for tailoring. --> 
+	<dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   	<dynamicField name="*_t" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   	<dynamicField name="*_t__" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+	
+   <!-- spell__ and autocomplete. Field for spell checking. Copy field from a number of other fields. -->
+   <field name="spell__" type="textSpell" indexed="true" stored="true" multiValued="true"/>
 
  </fields>
 
 <!-- Copy fields used for search optimization. -->
-<copyField source="hasTitle" dest="hasTitleText"/>
-<copyField source="hasTitle" dest="spell"/>
-<copyField source="hasTitleText" dest="spell"/>
-<copyField source="ofMimeType" dest="spell"/>
-<copyField source="isEntityType" dest="spell"/>
-<copyField source="hasState" dest="spell"/>
-<copyField source="withRawText" dest="spell"/>
-<copyField source="hasRootValue" dest="spell"/>
-<copyField source="fromSource" dest="fromSourceText"/>
-<copyField source="fromSource" dest="spell"/>
-<copyField source="fromSourceText" dest="spell"/>
-<copyField source="withReferenceId" dest="withReferenceIdText"/>
-<copyField source="withReferenceId" dest="spell"/>
-<copyField source="withReferenceIdText" dest="spell"/>
+<copyField source="hasTitle" dest="hasTitleText__"/>
+<copyField source="hasTitle" dest="spell__"/>
+<copyField source="hasTitleText__" dest="spell__"/>
+<copyField source="ofMimeType" dest="spell__"/>
+<copyField source="ofEntityType" dest="spell__"/>
+<copyField source="hasState" dest="spell__"/>
+<copyField source="withRawText" dest="spell__"/>
+<copyField source="hasRootValue" dest="spell__"/>
+<copyField source="fromSource" dest="fromSourceText__"/>
+<copyField source="fromSource" dest="spell__"/>
+<copyField source="fromSourceText__" dest="spell__"/>
+<copyField source="withReferenceId" dest="withReferenceIdText__"/>
+<copyField source="withReferenceId" dest="spell__"/>
+<copyField source="withReferenceIdText__" dest="spell__"/>
+<copyField source="parentEntity" dest="spell__"/>
+<copyField source="childEntity" dest="spell__"/>
 
-<!-- Tailoring. Add new copy fields here! -->
+<copyField source="*_s" dest="*_t__"/>
+<copyField source="*_t__" dest="spell__"/>
 
 
 

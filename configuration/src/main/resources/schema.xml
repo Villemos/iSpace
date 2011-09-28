@@ -4,7 +4,7 @@
 
   <types>
 
-    <!-- The StrField type is not analyzed, but indexed/stored verbatim.  
+     <!-- The StrField type is not analyzed, but indexed/stored verbatim.  
        - StrField and TextField support an optional compressThreshold which
        limits compression (if enabled in the derived fields) to values which
        exceed a certain size (in characters). -->
@@ -68,29 +68,12 @@
       -->
     <fieldType name="date" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
 
-    <!-- solr.TextField allows the specification of custom text analyzers
-         specified as a tokenizer and a list of token filters. Different
-         analyzers may be specified for indexing and querying.
-
-         The optional positionIncrementGap puts space between multiple fields of
-         this type on the same document, with the purpose of preventing false phrase
-         matching across fields.
-
-         For more info on customizing your analyzer chain, please see
-         http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters
-     -->
-
-
-       <!-- A special text field that use the tuple analyzer -->
-   <!-- <fieldType name="tuples" class="solr.TextField" sortMissingFirst="true">
-      <analyzer type="index" class="org.sindice.lucene.analysis.TupleStandardAnalyzer" words="stopwords.txt"/>
-    </fieldType>
--->		
     <!-- A text field that uses WordDelimiterFilter to enable splitting and matching of
         words on case-change, alpha numeric boundaries, and non-alphanumeric chars.
 				This will use to analyze field such as url, label, class, ontology, etc.
         -->
     <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+
 
       <analyzer type="index">
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -158,61 +141,74 @@
        best performance.
    -->
 
-   <!-- The id is a unique key of the document. The unique key is a compound element, being the URL of the ie -->
-   <field name="uri" type="string" indexed="true" stored="true" multiValued="false" required="true" omitNorms="true"/>
+   <!-- Entity fields. -->
+   <field name="hasUri" type="string" indexed="true" stored="true" multiValued="false" required="true" omitNorms="true"/>
+   <field name="wasStoredAt" type="date" indexed="true" stored="true" default="NOW" multiValued="false" required="true" omitNorms="true"/>
+   <field name="isAttachedTo" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>   
+   <field name="fromSource" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="fromSourceText__" type="text" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="ofMimeType" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="ofEntityType" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="hasTitle" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="hasTitleText__" type="text" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withReferenceId" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withReferenceIdText__" type="text" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withIssue" type="slong" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="withRevision" type="slong" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="isPartOf" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>   
+   <field name="hasPart" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <field name="withRawText" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="withAttachedLog" type="text" indexed="true" stored="true" multiValued="true" required="false"/>
 
-   <!-- timestamp. The timestamp when this entry was added to the EEIS system knowledge base.  -->
-   <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false" required="true" omitNorms="true"/>
+   <!-- Synonym fields. -->
+   <field name="hasRootValue" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="hasState" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+   <field name="ofCategory" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
 
-   <field name="title" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="titleText" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   <!-- Taxonomy fields. -->
+	<field name="parentEntity" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>
+	<field name="childEntity" type="string" indexed="true" stored="true" multiValued="false" required="false" omitNorms="true"/>  
 
-   <field name="organisation" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="project" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="system" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-
-
-   <field name="reference" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="issue" type="slong" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   <field name="revision" type="slong" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   
-   <field name="mime" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-
-   <field name="type" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-
-   <field name="root" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-
-   <field name="state" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-
-   <field name="text" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-
-   <field name="log" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
-   
-   <!-- SPELL / AUTOCOMPLETE. Field for spell checking. Copy field from a number of other fields. -->
-   <field name="spell" type="textSpell" indexed="true" stored="true" multiValued="true"/>
+   <!-- Catch all field for tailoring. --> 
+	<dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   	<dynamicField name="*_t" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+   	<dynamicField name="*_t__" type="text" indexed="true" stored="true" multiValued="true" required="false" omitNorms="true"/>
+	
+   <!-- spell__ and autocomplete. Field for spell checking. Copy field from a number of other fields. -->
+   <field name="spell__" type="textSpell" indexed="true" stored="true" multiValued="true"/>
 
  </fields>
 
 <!-- Copy fields used for search optimization. -->
-<copyField source="title" dest="titleText"/>
- 
-<!-- Copy fields used for auto completion / spell checking. -->
-<copyField source="log" dest="spell"/>
-<copyField source="title" dest="spell"/>
-<copyField source="mime" dest="spell"/>
-<copyField source="type" dest="spell"/>
-<copyField source="state" dest="spell"/>
-<copyField source="text" dest="spell"/>
-<copyField source="root" dest="spell"/>
+<copyField source="hasTitle" dest="hasTitleText__"/>
+<copyField source="hasTitle" dest="spell__"/>
+<copyField source="hasTitleText__" dest="spell__"/>
+<copyField source="ofMimeType" dest="spell__"/>
+<copyField source="ofEntityType" dest="spell__"/>
+<copyField source="hasState" dest="spell__"/>
+<copyField source="withRawText" dest="spell__"/>
+<copyField source="hasRootValue" dest="spell__"/>
+<copyField source="fromSource" dest="fromSourceText__"/>
+<copyField source="fromSource" dest="spell__"/>
+<copyField source="fromSourceText__" dest="spell__"/>
+<copyField source="withReferenceId" dest="withReferenceIdText__"/>
+<copyField source="withReferenceId" dest="spell__"/>
+<copyField source="withReferenceIdText__" dest="spell__"/>
+<copyField source="parentEntity" dest="spell__"/>
+<copyField source="childEntity" dest="spell__"/>
+
+<copyField source="*_s" dest="*_t__"/>
+<copyField source="*_t__" dest="spell__"/>
 
 
- <!-- Field to use to determine and enforce document uniqueness. 
+
+<!-- Field to use to determine and enforce document uniqueness. 
       Unless this field is marked with required="false", it will be a required field
    -->
- <uniqueKey>uri</uniqueKey>
+ <uniqueKey>hasUri</uniqueKey>
 
  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>text</defaultSearchField>
+ <defaultSearchField>withRawText</defaultSearchField>
 
  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
  <solrQueryParser defaultOperator="AND"/>

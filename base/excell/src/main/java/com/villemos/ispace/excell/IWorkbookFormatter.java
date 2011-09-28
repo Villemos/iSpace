@@ -21,25 +21,12 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.enricher;
 
-import java.lang.reflect.Field;
+package com.villemos.ispace.excell;
 
-import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 
-import com.villemos.ispace.api.Fields;
-import com.villemos.ispace.api.InformationObject;
+public interface IWorkbookFormatter {
 
-public class ExpressionBasedTransformer {
-
-	protected String expression = "\\<.*?\\>";	
-	
-	protected String fieldName = Fields.withRawText;
-	
-	protected String replacement = "";
-	
-	public void transform(@Body InformationObject io) {
-		
-	}
+	public void add(Exchange exchange, ExcellEndpoint endpoint);
 }

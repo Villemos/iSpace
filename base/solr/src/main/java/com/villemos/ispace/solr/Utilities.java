@@ -10,6 +10,8 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Suggestion;
 import org.apache.solr.common.SolrDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.villemos.ispace.api.Facet;
 import com.villemos.ispace.api.Fields;
@@ -18,6 +20,8 @@ import com.villemos.ispace.api.ResultSet;
 
 public class Utilities {
 
+	private static final transient Logger LOG = LoggerFactory.getLogger(Utilities.class);
+	
 	public static synchronized ResultSet getResultSet(QueryResponse response, int rows) {
 
 		ResultSet set = new ResultSet();
@@ -48,29 +52,29 @@ public class Utilities {
 						if (ioField != null) {					
 
 							/** If this is a 'multivalued' field, insert as a list.  */ 
-							if (ioField.getType().equals("")) {
+							if (ioField.get(io) instanceof List) {
 								Method add = List.class.getDeclaredMethod("addAll",Object.class);
 								add.invoke(ioField, document.getFieldValues(field));
 							}
 							/** Else set only the field.*/
 							else {
-								if (document.getFieldValue(field) instanceof String) {
+								if (ioField.get(io) instanceof String) {
 									ioField.set(io, document.getFieldValue(field));								
 								}
-								else if (document.getFieldValue(field) instanceof Long) {
+								else if (ioField.get(io) instanceof Long) {
 									ioField.set(io, Long.toString((Long) document.getFieldValue(field)));
 								}
-								else if (document.getFieldValue(field) instanceof Float) {
+								else if (ioField.get(io) instanceof Float) {
 									ioField.set(io, (Float) document.getFieldValue(field));
 								}
-								else if (document.getFieldValue(field) instanceof Integer) {
+								else if (ioField.get(io) instanceof Integer) {
 									ioField.set(io, Integer.toString((Integer) document.getFieldValue(field)));
 								}
-								else if (document.getFieldValue(field) instanceof Double) {
+								else if (ioField.get(io) instanceof Double) {
 									ioField.set(io, Double.toString((Double) document.getFieldValue(field)));
 								}
 								else {
-
+									LOG.warn("Failed to assign value '" + field + "' to IO object. Type '" + ioField.getType().getName() + "' not supported.");
 								}
 							}						
 						}

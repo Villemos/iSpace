@@ -34,15 +34,19 @@ import org.apache.camel.impl.ScheduledPollEndpoint;
 public class ExcellEndpoint extends ScheduledPollEndpoint {
 	
 	/** The file to be written to / read from. */
-	protected String file = "C:/Users/Public/export.xls";
+	protected String file = "C:/Users/Public/export";
 	
 	/** The default names of the header and body sheet in the exported sheet. */
 	protected String bodySheet = "body";
-	protected String headerSheet = "header";
+	protected String headerSheet = "metadata";
 
+	protected IWorkbookFormatter workbookFormatter = new DefaultWorkbookFormatter();
+	
 	/** If set to true, then the data read from the excell sheet will be streamed, i.e. each entry will
 	 * be send in a separate exchange. */
 	protected boolean stream = false;
+	
+	protected String timestamp = "yyyy-MM-dd_HH-MM-ss";
 	
 	public ExcellEndpoint() {
     }
@@ -97,6 +101,14 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 
 	public void setStream(boolean stream) {
 		this.stream = stream;
+	}
+
+	public IWorkbookFormatter getWorkbookFormatter() {
+		return workbookFormatter;
+	}
+
+	public void setWorkbookFormatter(IWorkbookFormatter workbookFormatter) {
+		this.workbookFormatter = workbookFormatter;
 	}
 	
 	
