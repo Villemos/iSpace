@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -45,15 +46,15 @@ public class ExcellTest extends AbstractJUnit4SpringContextTests  {
 	@Test
 	public void testDefaultInsert() {
 
-		Map<String, List<TestClass>> objects = new HashMap<String, List<TestClass>>();
+		Map<String, List<Object>> objects = new HashMap<String, List<Object>>();
 
-		List<TestClass> sheet1objects = new ArrayList<TestClass>();
+		List<Object> sheet1objects = new ArrayList<Object>();
 		sheet1objects.add(new TestClass("string1",new Date(1), 1, 1, 1, false));
 		sheet1objects.add(new TestClass("string2",new Date(2), 2, 2, 2, false));
 		sheet1objects.add(new TestClass("string3",new Date(3), 3, 3, 3, false));
 		sheet1objects.add(new TestClass("string4",new Date(4), 4, 4, 4, false));
 
-		List<TestClass> sheet2objects = new ArrayList<TestClass>();
+		List<Object> sheet2objects = new ArrayList<Object>();
 		sheet2objects.add(new TestClass("string5",new Date(5), 5, 5, 5, false));
 		sheet2objects.add(new TestClass("string6",new Date(6), 6, 6, 6, false));
 		sheet2objects.add(new TestClass("string7",new Date(7), 7, 7, 7, false));
@@ -63,42 +64,23 @@ public class ExcellTest extends AbstractJUnit4SpringContextTests  {
 		objects.put("Sheet2", sheet2objects);
 
 
-
 		/** Insert single object. */
-		Exchange exchange = new DefaultExchange(context);
-		exchange.getIn().setHeader("filename", "test.xls");
-		exchange.getIn().setBody(sheet1objects.get(0));		
-		storeDefaultRoute.send(exchange);
+		
+		/** Clean up the file. */
+		String filename = "test-single-insert.xls";
+		cleanFile("test-single-insert.xls");
+
+		sendData(filename, sheet1objects.get(0));
 
 		/** Check the file. */
 		try {
-			File file = new File("test.xls");
+			File file = new File(filename);
+			assertTrue(file.exists());
 			Workbook workbook = Workbook.getWorkbook(file);
 
-			assertTrue(workbook != null);
-			assertTrue(workbook.getSheet("data") != null);
-
-			/** Check that the headers have been set as expected. */
-			assertTrue(workbook.getSheet("data").getCell(0, 0).getContents().equals("Class"));
-			assertTrue(workbook.getSheet("data").getCell(0, 1).getContents().equals(TestClass.class.getName()));
-			
-			int column = 1;
-			for (Field field : TestClass.class.getFields()) {
-				assertTrue(workbook.getSheet("data").getCell(column, 0).getContents().equals(field.getName()));
-
-				if (workbook.getSheet("data").getCell(column, 1).getType().toString().equals("Date")) {
-					// assertTrue(workbook.getSheet("data").getCell(column, 1).getContents().equals(field.get(sheet1objects.get(0)).toString()));					
-				}
-				else {
-					assertTrue(workbook.getSheet("data").getCell(column, 1).getContents().equals(field.get(sheet1objects.get(0)).toString()));
-				}
-
-				column++;
-			}
+			checkData(workbook, "data", Arrays.asList(new Object[] {sheet1objects.get(0)}));
 
 			workbook.close();
-			boolean result = file.delete();
-			assertTrue(result);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -106,116 +88,110 @@ public class ExcellTest extends AbstractJUnit4SpringContextTests  {
 
 
 		/** Insert List object. */
-		exchange = new DefaultExchange(context);
-		exchange.getIn().setHeader("filename", "test.xls");
-		exchange.getIn().setBody(sheet1objects);		
-		storeDefaultRoute.send(exchange);
+		filename = "test-list-insert.xls";
+		cleanFile(filename);
+		
+		sendData(filename, sheet1objects);
 
 		/** Check the file. */
 		try {
-			File file = new File("test.xls");
+			File file = new File(filename);
+			assertTrue(file.exists());
 			Workbook workbook = Workbook.getWorkbook(file);
 
-			assertTrue(workbook != null);
-			assertTrue(workbook.getSheet("data") != null);
-
-			/** Check that the headers have been set as expected. */
-			assertTrue(workbook.getSheet("data").getCell(0, 0).getContents().equals("Class"));
-
-			int column = 1;
-			for (Field field : TestClass.class.getFields()) {
-				assertTrue(workbook.getSheet("data").getCell(column, 0).getContents().equals(field.getName()));
-
-				int row = 1;
-				for (TestClass object : sheet1objects) {
-					assertTrue(workbook.getSheet("data").getCell(0, row).getContents().equals(TestClass.class.getName()));
-					if (workbook.getSheet("data").getCell(column, row).getType().toString().equals("Date")) {
-						// assertTrue(workbook.getSheet("data").getCell(column, 1).getContents().equals(field.get(sheet1objects.get(0)).toString()));					
-					}
-					else {
-						assertTrue(workbook.getSheet("data").getCell(column, row).getContents().equals(field.get(object).toString()));
-					}
-					row++;
-				}
-
-				column++;
-			}
+			checkData(workbook, "data", sheet1objects);
 
 			workbook.close();
-			boolean result = file.delete();
-			assertTrue(result);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 
 		/** Insert Map object. */
-		exchange = new DefaultExchange(context);
-		exchange.getIn().setHeader("filename", "test.xls");
-		exchange.getIn().setBody(objects);		
-		storeDefaultRoute.send(exchange);
-
+		filename = "test-map-insert.xls"; 
+		cleanFile(filename);
+		
+		sendData(filename, objects);
+		
 		/** Check the file. */
 		try {
-			File file = new File("test.xls");
+			File file = new File(filename);
+			assertTrue(file.exists());
 			Workbook workbook = Workbook.getWorkbook(file);
 
-			assertTrue(workbook != null);
-			assertTrue(workbook.getSheet("Sheet1") != null);
-			assertTrue(workbook.getSheet("Sheet2") != null);
-			
-			/** Check that the headers have been set as expected. */
-			assertTrue(workbook.getSheet("Sheet1").getCell(0, 0).getContents().equals("Class"));
-			int column = 1;
-			for (Field field : TestClass.class.getFields()) {
-				assertTrue(workbook.getSheet("Sheet1").getCell(column, 0).getContents().equals(field.getName()));
-
-				int row = 1;
-				for (TestClass object : sheet1objects) {
-					assertTrue(workbook.getSheet("Sheet1").getCell(0, row).getContents().equals(TestClass.class.getName()));
-					if (workbook.getSheet("Sheet1").getCell(column, row).getType().toString().equals("Date")) {
-						// assertTrue(workbook.getSheet("data").getCell(column, 1).getContents().equals(field.get(sheet1objects.get(0)).toString()));					
-					}
-					else {
-						assertTrue(workbook.getSheet("Sheet1").getCell(column, row).getContents().equals(field.get(object).toString()));
-					}
-					row++;
-				}
-
-				column++;
-			}
-
-			/** Check that the headers have been set as expected. */
-			assertTrue(workbook.getSheet("Sheet2").getCell(0, 0).getContents().equals("Class"));
-			column = 1;
-			for (Field field : TestClass.class.getFields()) {
-				assertTrue(workbook.getSheet("Sheet2").getCell(column, 0).getContents().equals(field.getName()));
-
-				int row = 1;
-				for (TestClass object : sheet2objects) {
-					assertTrue(workbook.getSheet("Sheet2").getCell(0, row).getContents().equals(TestClass.class.getName()));
-					if (workbook.getSheet("Sheet2").getCell(column, row).getType().toString().equals("Date")) {
-						// assertTrue(workbook.getSheet("data").getCell(column, 1).getContents().equals(field.get(sheet1objects.get(0)).toString()));					
-					}
-					else {
-						assertTrue(workbook.getSheet("Sheet2").getCell(column, row).getContents().equals(field.get(object).toString()));
-					}
-					row++;
-				}
-
-				column++;
-			}
+			checkData(workbook, "Sheet1", sheet1objects);
+			checkData(workbook, "Sheet2", sheet2objects);
 
 			workbook.close();
-			boolean result = file.delete();
-			assertTrue(result);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		
+		/** Send a list with a mix of objects. */
+		sheet1objects.add(new TestClassSpecialization("string9", new Date(9), 9, 9, 9, true, "StringNew0"));
+		sheet1objects.add(new TestClassUnrelated("StringNewUnrelated", 10));
+
+		/** Insert new List object. */
+		filename = "test-list-insert-mixed.xls"; 
+		cleanFile(filename);
+		
+		sendData(filename, objects);
+		
+		/** Check the file. */
+		try {
+			File file = new File(filename);
+			assertTrue(file.exists());
+			Workbook workbook = Workbook.getWorkbook(file);
+
+			// checkData(workbook, "data", sheet1objects);
+
+			workbook.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
-
 	}
 
+	private void sendData(String filename, Object data) {
+		Exchange exchange = new DefaultExchange(context);
+		exchange.getIn().setHeader("filename", filename);
+		exchange.getIn().setBody(data);		
+		storeDefaultRoute.send(exchange);
+	}
+
+	private void checkData(Workbook workbook, String sheet, List<Object> asList) throws IllegalArgumentException, IllegalAccessException {
+		
+		assertTrue(workbook != null);
+		assertTrue(workbook.getSheet(sheet) != null);
+
+		int column = 1;
+		for (Field field : TestClass.class.getFields()) {
+			assertTrue(workbook.getSheet(sheet).getCell(column, 0).getContents().equals(field.getName()));
+
+			int row = 1;
+			for (Object object : asList) {
+				assertTrue(workbook.getSheet(sheet).getCell(0, row).getContents().equals(TestClass.class.getName()));
+				if (workbook.getSheet(sheet).getCell(column, row).getType().toString().equals("Date")) {
+					// assertTrue(workbook.getSheet("data").getCell(column, 1).getContents().equals(field.get(sheet1objects.get(0)).toString()));					
+				}
+				else {
+					assertTrue(workbook.getSheet(sheet).getCell(column, row).getContents().equals(field.get(object).toString()));
+				}
+				row++;
+			}
+
+			column++;
+		}
+	}
+
+	protected void cleanFile(String name) {
+		File file = new File(name);
+		if (file.exists()) {
+			file.delete();
+		}
+	}
+	
 	@DirtiesContext
 	@Test
 	public void testStreamInsert() {

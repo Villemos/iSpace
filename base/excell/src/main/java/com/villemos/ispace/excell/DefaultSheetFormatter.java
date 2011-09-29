@@ -24,9 +24,11 @@
 package com.villemos.ispace.excell;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jxl.write.DateTime;
@@ -48,11 +50,13 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 			try {
 				sheet.addCell(new Label(0, row, object.getClass().getName()));			
 
-				for (Field field : getFields(object)) {
+				List<Field> fields = new ArrayList<Field>();
+				for (Field field : getFields(object.getClass(), fields)) {
 					
+					/** Create row 0 headers if needed. */
 					if (columns.containsKey(field.getName()) == false) {
 						columns.put(field.getName(), sheet.getColumns());
-						sheet.addCell(new Label(sheet.getColumns(), row, field.getName()));
+						sheet.addCell(new Label(sheet.getColumns(), 0, field.getName()));
 					}
 					
 					field.setAccessible(true);
@@ -73,7 +77,18 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 		}		
 	}
 
-	protected Field[] getFields(Object object) {
-		return object.getClass().getFields();
+	protected List<Field> getFields(Class object, List<Field> fields) {
+		
+		/** Add all fields of this class. */
+		for (Field field : object.getFields()) {
+			fields.add(field);
+		}
+		
+		/** Recursivly get super class fields. */
+		if (object.getSuperclass() != null) {
+			getFields(object.getSuperclass(), fields);
+		}
+		
+		return fields;
 	}
 }
