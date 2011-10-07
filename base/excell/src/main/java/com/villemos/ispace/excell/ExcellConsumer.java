@@ -25,16 +25,21 @@ package com.villemos.ispace.excell;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
+import jxl.Cell;
+import jxl.DateCell;
 import jxl.Sheet;
 import jxl.Workbook;
+import jxl.write.DateTime;
+import jxl.write.biff.DateRecord;
 
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
@@ -63,7 +68,7 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 	protected int poll() throws Exception {
 
 		/** Read input file. */
-		File input = new File(endpoint.getFile());
+		File input = new File(endpoint.getFilename());
 
 		if (input.exists() == false) {
 			LOG.warn("File '" + input.getAbsolutePath() + "' does not exist.");
@@ -77,17 +82,14 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 		}
 		lastPollTime = input.lastModified();
 
-		List<Object> dataList = new ArrayList<Object>();
-
+		Map<String, List<Object>> data = new TreeMap<String, List<Object>>();
+		
 		try {
 			Workbook workbook = Workbook.getWorkbook(input);
 
 			for (String sheetName : workbook.getSheetNames()) {
-
-				if (sheetName.equals("metadata")) {
-					continue;
-				}
-
+				List<Object> dataList = new ArrayList<Object>();
+				
 				Sheet bodySheet = workbook.getSheet(sheetName);
 
 				/** Read the sheet headers. */
@@ -105,129 +107,16 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 					/** Read the class name. */
 					String className = bodySheet.getCell(0, 1).getContents().toString();
 
-					Class cls = Class.forName(className);
-					Object instance = cls.newInstance();
+					try {
+						Class cls = Class.forName(className);
+						Object instance = cls.newInstance();
 
-					column = 1;
-					while (column < bodySheet.getColumns()) {
-						try {
-							Field field = instance.getClass().getField(fields.get(column));
-							field.setAccessible(true);
+						column = 1;
+						while (column < bodySheet.getColumns()) {
+							try {
+								Field field = instance.getClass().getField(fields.get(column));
+								field.setAccessible(true);
 
-							if (field.get(instance) instanceof List) {
-
-								/** Detect method to use to set the value. */
-								Type type = field.getGenericType();
-								ParameterizedType pt = (ParameterizedType) type;
-
-								/** Find the method. */
-								Type listType = pt.getActualTypeArguments()[0];
-
-								try {
-
-									for (String valueStr : bodySheet.getCell(column, row).getContents().split("\\|\\|")) {
-										Method add = null;
-										Object value = null;
-										if (listType.toString().contains(String.class.getName())) {
-											value = valueStr;
-											add = List.class.getDeclaredMethod("add", Object.class);
-										}
-										else if (listType.getClass().isAssignableFrom(Long.class)) {
-											value = Long.parseLong(valueStr);
-											add = List.class.getDeclaredMethod("add", Long.class);
-										}
-										else if (listType.getClass().isAssignableFrom(Float.class)) {
-											value = Float.parseFloat(valueStr);
-											add = List.class.getDeclaredMethod("add", Float.class);
-										}
-										else if (listType.getClass().isAssignableFrom(Integer.class)) {
-											value = Integer.parseInt(valueStr);
-											add = List.class.getDeclaredMethod("add", Integer.class);
-										}
-										else if (listType.getClass().isAssignableFrom(Double.class)) {
-											value = Double.parseDouble(valueStr);
-											add = List.class.getDeclaredMethod("add", Double.class);
-										}
-										else {
-
-										}
-
-										add.invoke(field.get(instance), value);
-									}
-								}
-								catch(Exception e) {
-									e.printStackTrace();
-								}
-							}
-							else if (field.get(instance) instanceof Map) {
-								/** Detect method to use to set the value. */
-								Type type = field.getGenericType();
-								ParameterizedType pt = (ParameterizedType) type;
-
-								/** Find the method. */
-								Type listType = pt.getActualTypeArguments()[1];
-
-								try {
-									String[] elements = bodySheet.getCell(column, row).getContents().split("=");
-									String key = elements[0];
-									String valueStr = elements[1]; 									
-
-									Method put = null;
-									Object value = null;
-									
-									Class params[] = new Class[2];
-									params[0] = String.class;
-
-									String valueElements[] = valueStr.split("\\|\\|"); 
-									if (valueElements.length > 1) {
-										value = new ArrayList<String>();
-										for (String element : valueElements) {
-											((List)value).add(element);
-										}
-										params[0] = Object.class;
-										params[1] = Object.class;
-										put = Map.class.getDeclaredMethod("put", params);
-
-									}
-									else if (listType.toString().contains(String.class.getName())) {
-										value = valueStr;
-										params[1] = String.class;
-										put = List.class.getDeclaredMethod("put", params);
-									}
-									else if (listType.getClass().isAssignableFrom(Long.class)) {
-										value = Long.parseLong(valueStr);
-										params[1] = Long.class;
-										put = List.class.getDeclaredMethod("put", params);
-									}
-									else if (listType.getClass().isAssignableFrom(Float.class)) {
-										value = Float.parseFloat(valueStr);
-										params[1] = Float.class;
-										put = List.class.getDeclaredMethod("put", params);
-									}
-									else if (listType.getClass().isAssignableFrom(Integer.class)) {
-										value = Integer.parseInt(valueStr);
-										params[1] = Integer.class;
-										put = List.class.getDeclaredMethod("put", params);
-									}
-									else if (listType.getClass().isAssignableFrom(Double.class)) {
-										value = Double.parseDouble(valueStr);
-										params[1] = Double.class;
-										put = List.class.getDeclaredMethod("put", params);
-									}
-									else {
-
-									}
-
-									Object keyValue[] = new Object[2];
-									keyValue[0] = key;
-									keyValue[1] = value;
-									put.invoke(field.get(instance), keyValue);
-								}
-								catch(Exception e) {
-									e.printStackTrace();
-								}								
-							}
-							else {
 								if (field.getType().isAssignableFrom(String.class)) {
 									field.set(instance, bodySheet.getCell(column, row).getContents());								
 								}
@@ -243,24 +132,45 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 								else if (field.getType().isAssignableFrom(Double.class)) {
 									field.set(instance, Double.parseDouble(bodySheet.getCell(column, row).getContents()));
 								}
+								else if (field.getType().isAssignableFrom(URL.class)) {
+									field.set(instance, new URL(bodySheet.getCell(column, row).getContents()));
+								}								
+								else if (field.getType().isAssignableFrom(Date.class)) {
+									Cell cell = bodySheet.getCell(column, row);
+									if (cell.getClass().getName().equals("jxl.read.biff.DateRecord")) {
+										field.set(instance, ((DateCell) cell).getDate());
+									}
+									else if (endpoint.getDateFormat() != null) {
+										SimpleDateFormat format = new SimpleDateFormat(endpoint.getDateFormat());
+										field.set(instance, format.parse(cell.getContents()));
+									}
+									else {
+										/** Hope that this is a string representing a long. */
+										field.set(instance, new Date(Long.parseLong(cell.getContents())));
+									}
+								}
+
 								else {
 
 								}
 							}
-						}
-						catch(Exception e) {
-							/** Exceptions will be thrown if this object doesnt have the field 
-							 * name. Catch and ignore.*/
+							catch(Exception e) {
+								/** Exceptions will be thrown if this object doesnt have the field 
+								 * name. Catch and ignore.*/
+							}
+
+							column++;
 						}
 
-						column++;
+						dataList.add(instance);
 					}
-
-					dataList.add(instance);
-
+					catch (Exception e) {
+						e.printStackTrace();
+					}
 					row++;
-
 				}
+				
+				data.put(sheetName, dataList);
 			}
 		}
 		catch (Exception e) {
@@ -269,21 +179,21 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 
 		if (endpoint.isStream()) {
 
-			for (Object body : dataList) {
-				Exchange newExchange = getEndpoint().createExchange();
-				newExchange.getIn().setBody(body);
-
-				getAsyncProcessor().process(newExchange, new AsyncCallback() {
-					public void done(boolean doneSync) {
-						LOG.trace("Done processing URL");
-					}
-				});
-			}
+//			for (Object body : dataList) {
+//				Exchange newExchange = getEndpoint().createExchange();
+//				newExchange.getIn().setBody(body);
+//
+//				getAsyncProcessor().process(newExchange, new AsyncCallback() {
+//					public void done(boolean doneSync) {
+//						LOG.trace("Done processing URL");
+//					}
+//				});
+//			}
 
 		}
 		else {
 			Exchange newExchange = getEndpoint().createExchange();
-			newExchange.getIn().setBody(dataList);
+			newExchange.getIn().setBody(data);
 
 			getAsyncProcessor().process(newExchange, new AsyncCallback() {
 				public void done(boolean doneSync) {

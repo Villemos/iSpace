@@ -9,6 +9,21 @@
        http://camel.apache.org/schema/spring 
        http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+	<bean id="fieldNames" class="java.util.HashMap">
+		<constructor-arg>
+			<map>
+				<entry key="aString" value="A String"/>
+				<entry key="aDate" value="A Date"/>
+				<entry key="aInteger" value="A Integer"/>
+				<entry key="aDouble" value="A Double"/>
+				<entry key="aFloat" value="A Float"/>
+				
+				<!-- Filtered out, by not including in map: -->
+				<!-- entry key="aBoolean" value="A Booolean"/ -->
+			</map>
+		</constructor-arg>
+	</bean>
+
 
 	<camelContext id="context" xmlns="http://camel.apache.org/schema/spring">
 		<template id="producer"/>
@@ -16,6 +31,11 @@
 		<route>
 			<from uri="direct:store" />
 			<to uri="excell:store"/>
+		</route>
+
+		<route>
+			<from uri="direct:storeWithTemplate" />
+			<to uri="excell:storeWithTemplate?fieldNames=#fieldNames&amp;template=test-template.xls"/>
 		</route>
 
 		<route>

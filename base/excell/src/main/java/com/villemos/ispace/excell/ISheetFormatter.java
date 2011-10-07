@@ -28,5 +28,5 @@ import java.util.Collection;
 import jxl.write.WritableSheet;
 
 public interface ISheetFormatter {
-	public void add(Collection objects, WritableSheet sheet);
+	public void add(Collection objects, WritableSheet sheet, ExcellEndpoint endpoint);
 }

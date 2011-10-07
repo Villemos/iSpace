@@ -93,6 +93,7 @@
 		<jena.version>0.5</jena.version>
 		<jxl.version>2.6.12</jxl.version>
 		<httpclient.version>4.1.1</httpclient.version>
+		<ispace.version>0.1-SNAPSHOT</ispace.version>
 	</properties>
 
 
@@ -295,6 +296,23 @@
 				<scope>test</scope>
 			</dependency>
 
+			<dependency>
+				<groupId>com.villemos.ispace</groupId>
+				<artifactId>solr</artifactId>
+				<version>${ispace.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.villemos.ispace</groupId>
+				<artifactId>aperture</artifactId>
+				<version>${ispace.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.villemos.ispace</groupId>
+				<artifactId>excell</artifactId>
+				<version>${ispace.version}</version>
+			</dependency>
 
 		</dependencies>
 	</dependencyManagement>

@@ -40,8 +40,17 @@ public class InformationObject {
 	public InformationObject() {};
 	
 	public float boost = 1f;
-	
+
 	public InformationObject(String uri, String hasTitle, String ofMimeType, String fromSource, String withRawText) {		
+		this.hasUri = uri;
+		this.hasTitle = hasTitle;
+		this.ofMimeType = ofMimeType;
+		this.fromSource = fromSource;
+		this.withRawText = withRawText;
+	}
+
+	public InformationObject(String ofEntityType, String uri, String hasTitle, String ofMimeType, String fromSource, String withRawText) {
+		this.ofEntityType = ofEntityType;
 		this.hasUri = uri;
 		this.hasTitle = hasTitle;
 		this.ofMimeType = ofMimeType;
@@ -55,7 +64,7 @@ public class InformationObject {
 	public List<String> isAttachedTo = new ArrayList<String>();   
 	public String fromSource;
 	public String ofMimeType;
-	public String ofEntityType;
+	public String ofEntityType = "io";
 	public String hasTitle;
 	public String withReferenceId;
 	public String withIssue;
@@ -76,4 +85,12 @@ public class InformationObject {
 	
 	/** A list of IO objects which are comments to this IO. */
 	public List<InformationObject> comments = new ArrayList<InformationObject>();
+	
+	public void addField(String name, Object value) {
+		dynamic.put(name, value);
+	};
+	
+	public void setContent(String content) {
+		this.withRawText = content;
+	}
 }

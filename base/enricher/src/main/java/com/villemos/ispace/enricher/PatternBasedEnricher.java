@@ -23,27 +23,30 @@
  */
 package com.villemos.ispace.enricher;
 
+import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.camel.Body;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
 import com.villemos.ispace.api.Fields;
+import com.villemos.ispace.api.InformationObject;
 
 public class PatternBasedEnricher extends RegularExpressionBuffer{
 
 	protected String headerFieldName;
-	
+
 	protected String pattern;
-	
+
 	protected Map<Integer, String> groups = null;
-	
+
 	@Handler
-	public void match(@Headers Map<String, Object> headers) {
+	public void match(@Headers Map<String, Object> headers, @Body InformationObject io) {
 		if (headers.containsKey(headerFieldName)) {
 			Pattern thePattern = Pattern.compile(pattern);
 			Matcher matcher = thePattern.matcher(headers.get(headerFieldName).toString());
@@ -51,9 +54,9 @@ public class PatternBasedEnricher extends RegularExpressionBuffer{
 				Iterator<Entry<Integer, String>> it = groups.entrySet().iterator();
 				while (it.hasNext()) {
 					Entry<Integer, String> entry = it.next();
-					
+
 					if (matcher.groupCount() >= entry.getKey()) {
-						headers.put(entry.getValue(), matcher.group(entry.getKey()));
+						IoFieldSetter.setField(io, entry.getValue(), matcher.group(entry.getKey()));
 					}
 				}
 			}

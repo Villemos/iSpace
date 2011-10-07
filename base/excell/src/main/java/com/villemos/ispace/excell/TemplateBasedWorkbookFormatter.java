@@ -26,19 +26,10 @@ package com.villemos.ispace.excell;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.camel.Exchange;
-
-import com.villemos.ispace.api.ResultSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jxl.Workbook;
 import jxl.format.CellFormat;
@@ -52,19 +43,13 @@ import jxl.write.biff.RowsExceededException;
 
 public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 
-	/** Full path to the spreadsheet that is the input template. */
-	protected String template = null;
-
-	/** Name of sheet to be used as generic Template if no template has been set above. */
-	protected String sheetTemplateName = "Template";
-
-	/** The sheet formatter to be used if no other is specified. */
-	protected ISheetFormatter sheetTemplateFormatter = new DefaultSheetFormatter();
-
-	protected void createSheetFormatter() {
-		sheetFormatter = sheetTemplateFormatter;
-	}
+	private static final transient Logger LOG = LoggerFactory.getLogger(TemplateBasedWorkbookFormatter.class);
 	
+	@Override
+	protected void createSheetFormatter(ExcellEndpoint endpoint) {
+		sheetFormatter = new TemplateBasedSheetFormatter();
+	}
+
 	/**
 	 * Method to copy a template sheet to another sheet.
 	 * 
@@ -79,20 +64,31 @@ public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 	protected void copySheet(WritableSheet sheet, WritableSheet newSheet) throws RowsExceededException, WriteException {
 
 		for (int row = 0 ; row < sheet.getRows() ; row++) {
+			
+			/** Set the width of the row. Weird way of doing it, but thats the jxlapi way. */
+			// newSheet.setRowView(row, sheet.getRowView(row).);
+			
 			for (int column = 0 ; column < sheet.getColumns() ; column++) {
+				
+				/** Set the width of the column. Weird way of doing it, but thats the jxlapi way. */
+				newSheet.setColumnView(column, sheet.getColumnView(column).getDimension());
+				
 				WritableCell readCell = sheet.getWritableCell(column, row);
-				WritableCell newCell = readCell.copyTo(column, row);
-				CellFormat readFormat = readCell.getCellFormat();
-				WritableCellFormat newFormat = new WritableCellFormat(readFormat);
-				newCell.setCellFormat(newFormat);
-				newSheet.addCell(newCell);
+				if (readCell.getClass() != jxl.biff.EmptyCell.class) {
+					WritableCell newCell = readCell.copyTo(column, row);
+					CellFormat readFormat = readCell.getCellFormat();
+					WritableCellFormat newFormat = new WritableCellFormat(readFormat);
+					newCell.setCellFormat(newFormat);
+					newSheet.addCell(newCell);
+				}
 			}
 		}
 	}
 
-	protected void createSheet(String sheetName, WritableWorkbook workbook) throws RowsExceededException, WriteException {
+	@Override
+	protected void createSheet(String sheetName, WritableWorkbook workbook, ExcellEndpoint endpoint) throws RowsExceededException, WriteException {
 		/** See if we have a default template which we should use. */
-		sheet = workbook.getSheet(sheetTemplateName);
+		sheet = workbook.getSheet(endpoint.getSheetTemplateName());
 		if (sheet != null) {
 			WritableSheet newSheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
 			copySheet(sheet, newSheet);
@@ -103,77 +99,35 @@ public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 			sheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
 		}
 	}
-	
-	protected void createWorkbook(Exchange exchange) throws BiffException, IOException {
+
+	@Override
+	protected void createWorkbook(Exchange exchange, ExcellEndpoint endpoint) throws BiffException, IOException {
 		/** Open the template workbook */
-		String templateName = template;
-		if (exchange.getIn().getHeader("template") != null) {
-			templateName = (String) exchange.getIn().getHeader("template");
-		}
+		String templateName = endpoint.getTemplate();
 		Workbook workbookIn = Workbook.getWorkbook(new File(templateName));
 
-		/** Build file name name. */
-		String newFileName = buildFileName(exchange);
-				
+		/** Build file name. */
+		String newFileName = buildFileName(exchange, endpoint);
+		File newFile = new File(newFileName);
 		/** Copy it to the new workbook. */
-		workbook = Workbook.createWorkbook(new File(newFileName), workbookIn);
+		workbook = Workbook.createWorkbook(newFile, workbookIn);
+		
+		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");
 	}
-	
+
+	@Override
 	protected synchronized void flushWorkbook() throws IOException, WriteException {
 		if (workbook != null) {
+
+			/** Remove the template sheet. */
+			workbook.removeSheet(0);
 			
 			/** Write and flush the workbook. */
 			workbook.write();
 			workbook.close();
 			workbook = null;
 		}
-	}
-
-	public String getTemplate() {
-		return template;
-	}
-
-	public void setTemplate(String template) {
-		this.template = template;
-	}
-
-	public String getFilename() {
-		return filename;
-	}
-
-	public void setFilename(String filename) {
-		this.filename = filename;
-	}
-
-	public String getTimestamp() {
-		return timestamp;
-	}
-
-	public void setTimestamp(String timestamp) {
-		this.timestamp = timestamp;
-	}
-
-	public Map<String, ISheetFormatter> getSheets() {
-		return sheets;
-	}
-
-	public void setSheets(Map<String, ISheetFormatter> sheets) {
-		this.sheets = sheets;
-	}
-
-	public String getSheetTemplateName() {
-		return sheetTemplateName;
-	}
-
-	public void setSheetTemplateName(String sheetTemplateName) {
-		this.sheetTemplateName = sheetTemplateName;
-	}
-
-	public ISheetFormatter getSheetTemplateFormatter() {
-		return sheetTemplateFormatter;
-	}
-
-	public void setSheetTemplateFormatter(ISheetFormatter sheetTemplateFormatter) {
-		this.sheetTemplateFormatter = sheetTemplateFormatter;
+		sheet = null;
+		sheetFormatter = null;
 	}
 }

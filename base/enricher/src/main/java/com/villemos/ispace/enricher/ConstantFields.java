@@ -30,7 +30,6 @@ import java.util.Map.Entry;
 
 import org.apache.camel.Body;
 import org.apache.camel.Handler;
-import org.apache.camel.Headers;
 
 import com.villemos.ispace.api.InformationObject;
 
@@ -50,12 +49,7 @@ public class ConstantFields {
 		while (it.hasNext()) {
 			Entry<String, String> entry = it.next();
 			
-			try {
-				io.getClass().getField(entry.getKey());
-			}
-			catch (Exception e) {
-				io.dynamic.put(entry.getKey(), entry.getValue());
-			}
+			IoFieldSetter.setField(io, entry.getKey(), entry.getValue());
 		}
 	}
 

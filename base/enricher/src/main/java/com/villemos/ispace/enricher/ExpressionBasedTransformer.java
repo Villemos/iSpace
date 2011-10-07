@@ -34,12 +34,26 @@ import com.villemos.ispace.api.InformationObject;
 public class ExpressionBasedTransformer {
 
 	protected String expression = "\\<.*?\\>";	
-	
+
 	protected String fieldName = Fields.withRawText;
-	
+
 	protected String replacement = "";
-	
+
 	public void transform(@Body InformationObject io) {
-		
+		try {
+			Field field = io.getClass().getField(fieldName);
+			String oldText = (String) field.get(io);
+			String newText = oldText.replaceAll(expression, replacement);
+			field.set(io, newText);
+		}
+		catch (NoSuchFieldException e) {
+			e.printStackTrace();
+		} 
+		catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} 
+		catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
 	}
 }

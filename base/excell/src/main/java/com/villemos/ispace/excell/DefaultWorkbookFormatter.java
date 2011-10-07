@@ -30,7 +30,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +37,8 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import org.apache.camel.Exchange;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jxl.Workbook;
 import jxl.read.biff.BiffException;
@@ -50,15 +51,8 @@ import com.villemos.ispace.api.ResultSet;
 
 public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 
-	/** The name of the output file. A timestamp will be appended and the 
-	 * postfix '.xls' */
-	protected String filename = "Output";
-
-	protected String timestamp = "yyyy-MM-dd-HH-mm-ss";
+	private static final transient Logger LOG = LoggerFactory.getLogger(DefaultWorkbookFormatter.class);
 	
-	/** Map of the sheet objects to be used for printing sheets. */
-	protected Map<String, ISheetFormatter> sheets = new HashMap<String, ISheetFormatter> ();
-
 	protected WritableWorkbook workbook = null;
 
 	protected ISheetFormatter sheetFormatter = null;
@@ -71,7 +65,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 		try {
 			/** In streaming mode the work book is closed at intervals. */
 			if (workbook == null) {
-				createWorkbook(exchange);
+				createWorkbook(exchange, endpoint);
 			}
 
 			/** Insert the data. */
@@ -79,10 +73,10 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 				/** TODO */
 			}
 			else if (object instanceof List) {
-				insertData("data", workbook, (Collection) object);
+				insertData("data", workbook, (Collection) object, endpoint);
 			}
 			else if (object instanceof Set) {
-				insertData("data", workbook, (Collection) object);
+				insertData("data", workbook, (Collection) object, endpoint);
 			}
 			else if (object instanceof Map) {
 				Iterator<Entry<String, List>> it = ((Map<String, List>) object).entrySet().iterator();
@@ -90,11 +84,11 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 					Entry<String, List> entry = it.next();
 					sheet = null;
 					sheetFormatter = null;
-					insertData(entry.getKey(), workbook, entry.getValue());
+					insertData(entry.getKey(), workbook, entry.getValue(), endpoint);
 				}
 			}
 			else {
-				insertData("data", workbook, Arrays.asList(new Object[] {object}));
+				insertData("data", workbook, Arrays.asList(new Object[] {object}), endpoint);
 			}
 
 			/** In stream mode someone else must call 'flushWorkbook' */
@@ -107,15 +101,15 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 
 	}
 
-	protected void insertData(String sheetName, WritableWorkbook workbook, Collection objects) throws RowsExceededException, WriteException {
+	protected void insertData(String sheetName, WritableWorkbook workbook, Collection objects, ExcellEndpoint endpoint) throws RowsExceededException, WriteException {
 		if (sheetFormatter == null) {
-			sheetFormatter = sheets.get(sheetName);
+			sheetFormatter = endpoint.getSheets().get(sheetName);
 		}
 
 		/** Use the template sheet formatter which has either been configured through 
 		 * the route configuration or will be the default formatter. */
 		if (sheetFormatter == null) {
-			createSheetFormatter();
+			createSheetFormatter(endpoint);
 		}
 
 		/** see if the sheet already exist. */
@@ -124,36 +118,38 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 		}
 		/** If it doesnt exist, then...*/
 		if (sheet == null) {
-			createSheet(sheetName, workbook);
+			createSheet(sheetName, workbook, endpoint);
 		}
 
 		/** Write the data to the sheet, using the formatter. */
-		sheetFormatter.add(objects, sheet);
+		sheetFormatter.add(objects, sheet, endpoint);
+		
+		/** Delete the template sheet from the workbook. */
+		/** TODO */
 	}
 
-	protected void createSheetFormatter() {
+	protected void createSheetFormatter(ExcellEndpoint endpoint) {
 		sheetFormatter = new DefaultSheetFormatter();
 	}
 	
-	protected void createSheet(String sheetName, WritableWorkbook workbook) throws RowsExceededException, WriteException {
+	protected void createSheet(String sheetName, WritableWorkbook workbook, ExcellEndpoint endpoint) throws RowsExceededException, WriteException {
 		 sheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
 	}
 
-	protected void createWorkbook(Exchange exchange) throws BiffException, IOException {
-		workbook = Workbook.createWorkbook(new File(buildFileName(exchange)));
+	protected void createWorkbook(Exchange exchange, ExcellEndpoint endpoint) throws BiffException, IOException {
+		String newFileName = buildFileName(exchange, endpoint);
+		File newFile = new File(newFileName);
+		workbook = Workbook.createWorkbook(newFile);
+		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");		
 	}	
 
-	protected String buildFileName(Exchange exchange) {
-		String newFileName = "";
+	protected String buildFileName(Exchange exchange, ExcellEndpoint endpoint) {
+		String newFileName = endpoint.getFilename();
 		
-		/** If the exchange holds a filename in the header, then use that. */
-		if (exchange.getIn().getHeader("filename") != null) {
-			newFileName = (String) exchange.getIn().getHeader("filename");
-		}
-		/** Else build a name using the timestamp. */
-		else {
-			SimpleDateFormat formatter = new SimpleDateFormat(timestamp);
-			newFileName = filename + "_" + formatter.format(new Date()) + ".xls"; 
+		/** If the name has not been configured, then use the timestamp format to create a name. */
+		if (newFileName == null) {
+			SimpleDateFormat formatter = new SimpleDateFormat(endpoint.getTimestamp());
+			newFileName = formatter.format(new Date()); 
 		}
 		
 		return newFileName;
@@ -161,6 +157,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 	
 	protected synchronized void flushWorkbook() throws IOException, WriteException {
 		if (workbook != null) {
+			
 			/** Write and flush the workbook. */
 			workbook.write();
 			workbook.close();

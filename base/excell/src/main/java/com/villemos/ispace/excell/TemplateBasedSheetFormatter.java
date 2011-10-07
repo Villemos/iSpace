@@ -26,50 +26,54 @@ package com.villemos.ispace.excell;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import jxl.write.DateTime;
-import jxl.write.Label;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import jxl.write.WritableSheet;
 
-public class TemplateBasedSheetFormatter implements ISheetFormatter {
+public class TemplateBasedSheetFormatter extends DefaultSheetFormatter {
 	
-	protected Map<String, String> field2column;
+	private static final transient Logger LOG = LoggerFactory.getLogger(TemplateBasedSheetFormatter.class);
 
-	protected int startRow = -1;
-	
-	public TemplateBasedSheetFormatter(Map<String, String> field2column) {
+	public TemplateBasedSheetFormatter() {
 		super();
-		this.field2column = field2column;
 	}
 
 	@Override
-	public void add(Collection objects, WritableSheet sheet) {
+	public void add(Collection objects, WritableSheet sheet, ExcellEndpoint endpoint) {
 		/** Meta data already exist. */
 		
-		/** Ready the column IDs. */
+		/** Read the column IDs. */
 		Map<String, Integer> name2id = new HashMap<String, Integer>();
 
 		int column = 0;
 		while (column < sheet.getColumns()) {
-			name2id.put(sheet.getCell(column, 0).getContents().toString(), column);	
+			if (sheet.getCell(column, 0).getClass() != jxl.biff.EmptyCell.class) {
+				name2id.put(sheet.getCell(column, 0).getContents().toString(), column);	
+			}
 			column++;
 		}				
 		
 		/** The sheet may have a header, in which case the first row(s) may already
 		 * have been set. We start at the first free row, unless a starting row
 		 * has been configured. */
-		int row = startRow == -1 ? sheet.getRows() : startRow;  
+		int row = endpoint.getStartRow() == -1 ? sheet.getRows() : endpoint.getStartRow();  
 		
 		/** Iterate through the objects. */
 		for (Object object : objects) {
 		
+			Map<String, String> fieldNames = endpoint.getFieldNames(); 
+			if (fieldNames == null) {
+				LOG.error("The configuration variable 'fieldNames' must be set on the Excell Endpoint when using template based generation.");
+			}
+			
 			/** Iterate through the field maps that we have. */
-			Iterator<Entry<String, String>> it = field2column.entrySet().iterator();
+			Iterator<Entry<String, String>> it = fieldNames.entrySet().iterator();
 			while (it.hasNext()) {
 				Entry<String, String> entry = it.next();
 				
@@ -80,15 +84,15 @@ public class TemplateBasedSheetFormatter implements ISheetFormatter {
 					field.setAccessible(true);
 					
 					String fieldName = field.getName();
-					String columnName = field2column.get(fieldName);
+					String columnName = fieldNames.get(fieldName);
+					
+					if (columnName == null) {
+						LOG.error("Column name '" + fieldName + "' not configured!");
+					}
+					
 					column = name2id.get(columnName);
 					
-					if (field.getType().getName().contains("java.util.Date")) {
-						sheet.addCell(new DateTime(column, row, (Date) field.get(object)));								
-					}
-					else {
-						sheet.addCell(new Label(column, row, field.get(object).toString()));
-					}
+					insertCell(field, sheet, column, row, object);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}				
@@ -96,21 +100,5 @@ public class TemplateBasedSheetFormatter implements ISheetFormatter {
 			
 			row++;
 		}		
-	}
-
-	public Map<String, String> getField2column() {
-		return field2column;
-	}
-
-	public void setField2column(Map<String, String> field2column) {
-		this.field2column = field2column;
-	}
-
-	public int getStartRow() {
-		return startRow;
-	}
-
-	public void setStartRow(int startRow) {
-		this.startRow = startRow;
 	}
 }

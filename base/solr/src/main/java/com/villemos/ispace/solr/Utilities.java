@@ -54,6 +54,7 @@ public class Utilities {
 							/** If this is a 'multivalued' field, insert as a list.  */ 
 							if (ioField.get(io) instanceof List) {
 								Method add = List.class.getDeclaredMethod("addAll",Object.class);
+								/** Should it be 'ioField.get(io)'? */
 								add.invoke(ioField, document.getFieldValues(field));
 							}
 							/** Else set only the field.*/
