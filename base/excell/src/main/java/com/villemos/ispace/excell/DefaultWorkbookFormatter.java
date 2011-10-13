@@ -24,6 +24,7 @@
 
 package com.villemos.ispace.excell;
 
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -34,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.Map.Entry;
 
 import org.apache.camel.Exchange;
@@ -65,7 +67,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 		try {
 			/** In streaming mode the work book is closed at intervals. */
 			if (workbook == null) {
-				createWorkbook(exchange, endpoint);
+				openWorkbook(exchange, endpoint);
 			}
 
 			/** Insert the data. */
@@ -136,13 +138,57 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 		 sheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
 	}
 
-	protected void createWorkbook(Exchange exchange, ExcellEndpoint endpoint) throws BiffException, IOException {
+	protected void openWorkbook(Exchange exchange, ExcellEndpoint endpoint) throws BiffException, IOException {
 		String newFileName = buildFileName(exchange, endpoint);
 		File newFile = new File(newFileName);
-		workbook = Workbook.createWorkbook(newFile);
-		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");		
+		
+		if (newFile.exists() == false) {
+			createWorkbook(newFile, exchange, endpoint);
+		}
+		else {
+			/** If we are not appending, then we delete the existing file and create a new. */
+			if (endpoint.isAppendMode() == false) {
+				LOG.info("Deleting old workbook '" + newFile.getAbsolutePath() + "', because appendMode has not been set.");
+				if (newFile.delete() == false) {
+					LOG.error("Failed to delete existing file '" + newFile.getAbsolutePath() + "'.");
+				}
+				
+				newFile = new File(newFileName);
+				createWorkbook(newFile, exchange, endpoint);
+			}
+			else {
+				/** Notice that this is applicable to non template based as well as template based
+				 * workbooks. */
+				String renamedFileName = "temp_" + UUID.randomUUID().toString() + ".xls";
+				File renamedFile = new File(renamedFileName); 
+				
+				/** Move existing workbook.*/
+				newFile.renameTo(renamedFile);
+				
+				/** Open again. */
+				newFile = new File(newFileName);
+				renamedFile = new File(renamedFileName);
+				
+				/** Open workbook. */
+				Workbook workbookIn = Workbook.getWorkbook(renamedFile);
+				
+				/** Copy it to the new workbook. */
+				workbook = Workbook.createWorkbook(newFile, workbookIn);
+				
+				/** Delete old. */
+				workbookIn.close();
+				renamedFile.delete();
+			}
+		}
 	}	
 
+	protected void createWorkbook(File newFile, Exchange exchange, ExcellEndpoint endpoint) throws IOException, BiffException {
+
+		workbook = Workbook.createWorkbook(newFile);
+		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");		
+	}
+	
+	
 	protected String buildFileName(Exchange exchange, ExcellEndpoint endpoint) {
 		String newFileName = endpoint.getFilename();
 		

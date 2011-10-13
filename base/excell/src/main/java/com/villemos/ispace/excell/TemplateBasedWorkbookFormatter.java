@@ -101,14 +101,11 @@ public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 	}
 
 	@Override
-	protected void createWorkbook(Exchange exchange, ExcellEndpoint endpoint) throws BiffException, IOException {
+	protected void createWorkbook(File newFile, Exchange exchange, ExcellEndpoint endpoint) throws IOException, BiffException {
 		/** Open the template workbook */
 		String templateName = endpoint.getTemplate();
 		Workbook workbookIn = Workbook.getWorkbook(new File(templateName));
 
-		/** Build file name. */
-		String newFileName = buildFileName(exchange, endpoint);
-		File newFile = new File(newFileName);
 		/** Copy it to the new workbook. */
 		workbook = Workbook.createWorkbook(newFile, workbookIn);
 		

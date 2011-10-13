@@ -314,6 +314,12 @@
 				<version>${ispace.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>com.villemos.ispace</groupId>
+				<artifactId>httpcrawler</artifactId>
+				<version>${ispace.version}</version>
+			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
 

@@ -42,8 +42,7 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	 * be send in a separate exchange. */
 	protected boolean stream = false;
 	
-	/** The name of the output file. A timestamp will be appended and the 
-	 * postfix '.xls' */
+	/** The name of the input file. */
 	protected String filename = null;
 
 	/** Timestamp to be appended to filename. */
@@ -67,10 +66,27 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	 * pair 'documentName'-'Document Title'. */
 	protected Map<String, String> fieldNames = null;
 
+	/** The first row to be used to insert a row. If set to -1, then the first row is the first
+	 * free row. */
 	protected int startRow = -1;
+	
+	/** The last row to be processed. If -1, then all rows are processed. Else the row set
+	 * by this value is the last to be processed. */
+	protected int endRow = -1;
 	
 	/** Format to be used when dates are written / read in as strings. */
 	protected String dateFormat = null;
+	
+	/** The fully qualified name of the class to be created. Can be used if no column in the 
+	 * spreadsheet contains the class name. */
+	protected String className = null;
+	
+	/** The column holding the class definition. Default value is 0. If the className is set, then
+	 * this value is ignored. */
+	protected int classColumn = 0;
+	
+	/** Defines whether data will be appended to the end of the excell spreadsheet or a new sheet created. */
+	protected boolean appendMode = false;
 	
 	public ExcellEndpoint() {
     }
@@ -191,6 +207,36 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	public void setDateFormat(String dateFormat) {
 		this.dateFormat = dateFormat;
 	}
-	
-	
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	public int getClassColumn() {
+		return classColumn;
+	}
+
+	public void setClassColumn(int classColumn) {
+		this.classColumn = classColumn;
+	}
+
+	public int getEndRow() {
+		return endRow;
+	}
+
+	public void setEndRow(int endRow) {
+		this.endRow = endRow;
+	}
+
+	public boolean isAppendMode() {
+		return appendMode;
+	}
+
+	public void setAppendMode(boolean appendMode) {
+		this.appendMode = appendMode;
+	}
 }

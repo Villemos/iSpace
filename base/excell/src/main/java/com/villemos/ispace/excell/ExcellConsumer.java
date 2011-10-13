@@ -38,8 +38,6 @@ import jxl.Cell;
 import jxl.DateCell;
 import jxl.Sheet;
 import jxl.Workbook;
-import jxl.write.DateTime;
-import jxl.write.biff.DateRecord;
 
 import org.apache.camel.AsyncCallback;
 import org.apache.camel.Exchange;
@@ -96,16 +94,35 @@ public class ExcellConsumer extends ScheduledPollConsumer {
 				Map<Integer, String> fields = new HashMap<Integer, String>();
 				int column = 1;
 				while (column < bodySheet.getColumns()) {
-					fields.put(column, bodySheet.getCell(column, 0).getContents().toString());	
+					String fieldName = bodySheet.getCell(column, 0).getContents().toString();
+					
+					/** A field map may have been defined on the endpoint. This can be used to map
+					 * a logical column header name 'The Title' to a class field name 'title'. */
+					if (endpoint.getFieldNames() != null) {
+						if (endpoint.getFieldNames().containsKey(fieldName)) {
+							fieldName = endpoint.getFieldNames().get(fieldName);
+						}
+					}
+					
+					fields.put(column, fieldName);	
 					column++;
 				}				
 
-				/** Go through all rows. */
-				int row = 1;
-				while (row < bodySheet.getRows()) {
+				/** A starting row may have been set. */
+				int row = endpoint.getStartRow() == -1 ? 1 : endpoint.getStartRow();
+				
+				int endRow = endpoint.getEndRow() == -1 ? bodySheet.getRows() : 1;
+				
+				while (row < endRow) {
 
+					/** The class name has either been configured on the Endpoint or should
+					 * be a column in the sheet. */
+					String className = endpoint.getClassName();
+
+					if (className == null) {
 					/** Read the class name. */
-					String className = bodySheet.getCell(0, 1).getContents().toString();
+						className = bodySheet.getCell(endpoint.getClassColumn(), row).getContents().toString();
+					}
 
 					try {
 						Class cls = Class.forName(className);

@@ -35,12 +35,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jxl.Cell;
-import jxl.format.CellFormat;
 import jxl.write.DateTime;
 import jxl.write.Label;
-import jxl.write.WritableCell;
-import jxl.write.WritableCellFormat;
 import jxl.write.WritableHyperlink;
 import jxl.write.WritableSheet;
 import jxl.write.WriteException;
