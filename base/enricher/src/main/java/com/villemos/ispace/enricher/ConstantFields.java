@@ -32,6 +32,7 @@ import org.apache.camel.Body;
 import org.apache.camel.Handler;
 
 import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.core.utilities.IoFieldSetter;
 
 /** Class for adding a number of fixed fields to the document. The fixed fields
  * are configured as part of the system setup. Typically this should be used to

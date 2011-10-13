@@ -76,28 +76,28 @@ public class SynonymBuffer {
 		exchange.getIn().setHeader("ispace.boostfactor" + 0,1L);
 		exchange.getIn().setBody(synonym);
 
-		context.createProducerTemplate().send("direct:store", exchange);
+		context.createProducerTemplate().send("direct:inject", exchange);
 	}
 
 	@Handler
 	public synchronized void registerSynonym(@Body Synonym synonym) {
-		if (synonym.hasState.equals("accepted")) {
-			if (acceptedSynonyms.containsKey(synonym.ofCategory) == false) {
-				acceptedSynonyms.put(synonym.ofCategory, new ArrayList<String>());
+		if (synonym.isAccepted()) {
+			if (acceptedSynonyms.containsKey(synonym.getCategory()) == false) {
+				acceptedSynonyms.put(synonym.getCategory(), new ArrayList<String>());
 			}
-			acceptedSynonyms.get(synonym.ofCategory).add(synonym.withRawText);
+			acceptedSynonyms.get(synonym.getCategory()).add(synonym.withRawText);
 		}
-		else if (synonym.hasState.equals("remove")) {
-			if (removeSynonyms.containsKey(synonym.ofCategory) == false) {
-				removeSynonyms.put(synonym.ofCategory, new ArrayList<String>());
+		else if (synonym.isRemove()) {
+			if (removeSynonyms.containsKey(synonym.getCategory()) == false) {
+				removeSynonyms.put(synonym.getCategory(), new ArrayList<String>());
 			}
-			removeSynonyms.get(synonym.ofCategory).add(synonym.withRawText);
+			removeSynonyms.get(synonym.getCategory()).add(synonym.withRawText);
 		}
 
-		if (knownSynonyms.containsKey(synonym.ofCategory) == false) {
-			knownSynonyms.put(synonym.ofCategory, new ArrayList<String>());
+		if (knownSynonyms.containsKey(synonym.getCategory()) == false) {
+			knownSynonyms.put(synonym.getCategory(), new ArrayList<String>());
 		}
-		knownSynonyms.get(synonym.ofCategory).add(synonym.withRawText);
+		knownSynonyms.get(synonym.getCategory()).add(synonym.withRawText);
 	}
 
 	public Map<String, String> getFieldsToEntityType() {

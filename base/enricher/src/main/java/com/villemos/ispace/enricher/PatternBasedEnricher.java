@@ -23,7 +23,6 @@
  */
 package com.villemos.ispace.enricher;
 
-import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,8 +33,8 @@ import org.apache.camel.Body;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.InformationObject;
+import com.villemos.ispace.core.utilities.IoFieldSetter;
 
 public class PatternBasedEnricher extends RegularExpressionBuffer{
 

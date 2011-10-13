@@ -27,17 +27,43 @@ public class Synonym extends InformationObject {
 
 	public Synonym(String value, String category, String root, String extractedFrom) {
 		this.hasTitle = "Synonym: " + value;
-		this.hasUri = "ispace:synonym/" + category + "/"+ root + "/" + value;
-		this.ofMimeType = "virtual";
+		this.hasUri = "ispace:synonym://" + category + "/"+ root + "/" + value;
+		this.ofMimeType = "ispace/virtual";
 		this.ofEntityType = "Synonym";
-		this.hasState = "candidate";
-		this.withRawText = value;
-		this.hasRootValue = root;
-		this.ofCategory = category;
+		
+		dynamic.put("hasState", "candidate");
+		dynamic.put("withRawText", value);
+		dynamic.put("hasRootValue", root);
+		dynamic.put("ofCategory", category);
+		
 		this.withAttachedLog.add("Candidate synonym detected and extracted from source '" + extractedFrom + "'.");
 	}
+	
+	public boolean isAccepted() {
+		if (dynamic.containsKey("hasState")) {
+			return dynamic.get("hasState").equals("accepted");
+		}
+		
+		return false;
+	}
+	
+	public boolean isCandidate() {
+		if (dynamic.containsKey("hasState")) {
+			return dynamic.get("hasState").equals("candidate");
+		}
+		
+		return false;
+	}
 
-	public String hasRootValue;
-	public String hasState;
-	public String ofCategory;
+	public boolean isRemove() {
+		if (dynamic.containsKey("hasState")) {
+			return dynamic.get("hasState").equals("remove");
+		}
+		
+		return false;
+	}
+
+	public String getCategory() {
+		return (String) dynamic.get("ofCategory");
+	}
 }

@@ -68,7 +68,6 @@ import org.semanticdesktop.aperture.subcrawler.impl.DefaultSubCrawlerRegistry;
 
 import com.villemos.ispace.aperture.processor.IProcessor;
 import com.villemos.ispace.api.InformationObject;
-import com.villemos.ispace.core.utilities.MessageBuilder;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;

@@ -26,7 +26,6 @@ package com.villemos.ispace.enricher;
 import java.lang.reflect.Field;
 
 import org.apache.camel.Body;
-import org.apache.camel.Exchange;
 
 import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.InformationObject;
