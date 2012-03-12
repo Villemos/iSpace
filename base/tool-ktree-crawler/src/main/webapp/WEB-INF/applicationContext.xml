@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="	http://www.springframework.org/schema/beans 
+       						http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       						http://www.springframework.org/schema/context
+           					http://www.springframework.org/schema/context/spring-context-3.0.xsd
+   						    http://camel.apache.org/schema/spring 		
+ 						    http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+	<context:annotation-config/>
+
+	<bean name="test" class="com.villemos.ispace.ktreecrawler.MiddleBean"/>
+
+	<camelContext id="context" xmlns="http://camel.apache.org/schema/spring">
+		<template id="producer"/>
+
+		<route>
+<!--			<from uri="direct:status"/>-->
+			<from uri="timer:test?fixedRate=true&amp;period=1000"/>
+			<to uri="bean:test"/>
+			<to uri="activemq:topic:status"/>
+		</route>
+		
+		<route>
+			<from uri="activemq:topic:request"/>
+			<to uri="bean:test"/>
+			<to uri="ktree:ktree?url=https://om.eo.esa.int/oem/kt&amp;port=443&amp;user=bkartascheff&amp;password=bkartascheff&amp;delay=86400000&amp;useFixedDelay=true&amp;initialDelay=0&amp;initialFolders=107:12229&amp;sendStatus=true" />
+			<to uri="excell:exporter?filename=unformatted.xls"/>
+		</route>
+		
+	</camelContext>
+	
+</beans>

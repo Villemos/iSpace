@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+
+<head>
+<title>Knowledge Tree Crawler</title>
+
+<style type="text/css">
+
+	.input {     
+		border: 1px solid green;
+		background: #ffc;
+		width:300px; 
+	}
+
+	.input:hover {
+	    border: 1px solid #f00;
+	    background: #ff6;
+	}
+	
+	.button:hover {
+	    background: #eef;
+	}
+	
+	fieldset {
+		border-style:solid;
+		border-width:1px; 	
+		border-color:green;
+	}
+
+	legend {
+  		padding: 0.2em 0.5em;
+  		border:1px solid green;
+  		color:green;
+  		font-weight:bold;
+  		font-size:90%;
+  		text-align:right;
+  	}
+  	
+  	label {
+  		width:800px;
+  		margin-right:0.5em;
+  		padding-top:0.2em;
+  		text-align:right;
+  		font-weight:bold;
+  	}
+
+  	note {
+  		float:left;
+  		width:100%;
+  		margin-right:0.5em;
+  		padding-top:0.2em;
+  		font-style:italic;
+  	}
+
+  	theHeader {
+  		float:left;
+  		width:100%;
+  		margin-right:0.5em;
+  		padding-top:0.2em;
+  		text-align:left;
+  		font-weight:bold;
+  		font-size:50px;
+  	}
+  	
+  	footer {
+  		float:left;
+  		width:800px;
+  		text-align:left;
+  		font-weight:bold;
+  		font-size:12px;
+  		font-style:italic;
+  	}
+  	  	
+</style>
+</head>
+
+<body>
+<br>
+<theHeader>Knowledge Tree Crawler</theHeader>
+</br>
+
+<br/>
+<br/>
+<form name="about" action="http://www.villemos.com" target="_blank">
+	<input type="hidden" name="q" value="solution/knowledgetreetool" />
+	<input type="submit" value="About" align="left"/>
+</form>
+<br/>
+
+<form name="configuration" id="configuration" action="http://localhost:4242/request/crawl" method="get" target="submissionConfirmation">
+  <fieldset id="fields" style='width:1100px;'>
+	<legend>Site Access Configuration</legend>
+    <label for="ktreeurl">Site URL </label><input type="text" name="ktreeurl" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The URL, including the 'http/https' protocol specification, to the site to be crawled. The sites login page will be at '[Site URL]/login.php'. "  width="15" height="15"/><br/>
+    <label for="ktreeuser">User </label><input type="text" name="ktreeuser" id="ktreeuser" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The name of a user. The user must already have registered at the site. The password inserted below must be the password defined for the user."  width="15" height="15"/><br/>
+    <label for="ktreepassword">Password </label><input type="password" name="ktreepassword" id="ktreepassword" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The password corresponding to the user name inserted above."  width="15" height="15"/><br/>
+    <label for="ktreeinitialFolders">ID of Root Folder(s) </label><input type="text" name="ktreeinitialFolders" id="ktreeinitialFolders" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="A ':' separated list of folder IDs, defining the initial (set of) folder(s). To find the folder ID, login to the site and go to the folder(s) which you want crawled. The URL in your browser will show something like '[Site URL]/browse.php?fFolderId=107'. The number 107 is the folder ID. If you want to define multiple root folders, then separate the IDs with ':'."  width="15" height="15"/><br/>
+    <input type="hidden" name="synchronous" value="false" class="input"/>
+  </fieldset>
+  
+  <br/>  
+    
+  <fieldset id="proxyfields" style='width:1100px;'>
+	<legend>Proxy Settings</legend>
+	<note for="proxyHost">Note: The proxy settings are only needed if you are behind a firewall and access the internet through a proxy. Else leave these blank.</note>
+	<br/>
+	<br/>
+    <label for="proxyHost">Proxy Host </label><input type="text" name="proxyHost" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The hostname of the proxy. Only needed if your behind a firewall."  width="15" height="15"/><br/>    
+    <label for="proxyPort">Proxy Port </label><input type="text" name="proxyPort" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The port of the proxy. Only needed if your behind a firewall."  width="15" height="15"/><br/>
+    <label for="proxyUser">Proxy User </label><input type="text" name="proxyUser" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The user required to login to the proxy. Only needed if your behind a firewall and if the proxy requires login."  width="15" height="15"/><br/>
+    <label for="proxyPassword">Proxy Password </label><input type="text" name="input" class="input"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="The password of the user used to access the proxy. Only needed if your behind a firewall."  width="15" height="15"/><br/>
+  </fieldset>
+    
+  <input type="submit" value="Crawl and Generate Report" align="left"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="Will crawl the repository and create two workbooks; 'unformatted.xls' and 'formatted.xls'."  width="15" height="15"/><br/>
+</form>
+
+<br/>
+
+<form name="regenerate" id="regenerate" action="http://localhost:4242/request/regenerate" method="get" target="submissionConfirmation">
+  <input type="submit" value="Regenerate Report" align="left"/><img src="http://www.ipswitchft.com/images/help-icon.png" title="Will recreate the 'formatted.xls' workbook based on the 'unformatted.xls' workbook. IMPORTANT: Can only be used if the workbook 'unformatted.xls' exist. Else press the button above!"  width="15" height="15"/><br/>
+</form>
+
+<br/>	
+<br/>
+
+<form name="statusform">
+  <iframe name="submissionConfirmation" id="submissionConfirmation" height="100" width="1120"></iframe>
+</form>
+
+<!--form name="refresh" action="http://localhost:4242/status" method="get" target="submissionConfirmation"-->
+    <!--input type="submit" value="Refresh" align="left"/-->
+<!--/form-->
+
+
+<br/>
+<!-- Hey! Give me some credit, ok? -->
+<footer><a href="http://www.villemos.com"><img src="http://www.villemos.com/sites/default/files/11003%20VIL%20logo.png" alt="Created by Villemos Solutions" width="50" height="35"/></a>
+Powered by <a href="http://www.villemos.com/?q=ispace">iSpace</a>, created by <a href="http://www.villemos.com/?q=contact">Villemos Solutions</a>, no rights reserved. Released under the <a href="http://www.apache.org/licenses/LICENSE-2.0.html">Apache License, Version 2.0</a>.
+<footer>
+</body>
+</html>

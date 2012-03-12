@@ -1,0 +1,82 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<artifactId>base</artifactId>
+		<groupId>com.villemos.ispace</groupId>
+		<version>1.0</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+  <groupId>com.villemos.ispace</groupId>
+  <artifactId>ktree</artifactId>
+  <name>iSpace Knowledge Tree - Component</name>
+  <version>0.1-SNAPSHOT</version>
+  
+  <description>The knowledge tree iSpace component is an iSpace endpoint capabel of extracting data from a knowledge tree installation through its REST API.</description>
+  <url>http://www.villemos.com/?q=components/ktree</url>
+  
+  	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+			<distribution>repo, manual</distribution>
+			<comments>iSpace is distributed under a friendly OSS license.</comments>
+		</license>
+	</licenses>
+
+	<repositories>
+
+		<!-- Repository for the dependencies on other iSpace components. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+
+		<!-- Repository dependency for Jxl. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>mvnrepository</id>
+			<name>mvnrepository</name>
+			<url>http://mvnrepository.com/</url>
+		</repository>
+
+	</repositories>
+  
+  
+  <dependencies>
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>core</artifactId>
+		<version>0.1-SNAPSHOT</version>	  		
+  	</dependency>
+
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>httpcrawler</artifactId>
+		<version>0.1-SNAPSHOT</version>	  		
+  	</dependency>
+  	
+  	<dependency>
+	  <groupId>org.apache.camel</groupId>
+	  <artifactId>camel-xstream</artifactId>
+	  <version>1.5.0</version>
+	</dependency>
+
+	<dependency>
+		<groupId>junit</groupId>
+		<artifactId>junit</artifactId>
+	</dependency>
+
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-log4j12</artifactId>
+	</dependency>
+
+  </dependencies>
+  
+  
+</project>
