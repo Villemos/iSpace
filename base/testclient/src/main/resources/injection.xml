@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="	http://www.springframework.org/schema/beans 
+       						http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       						http://www.springframework.org/schema/context
+           					http://www.springframework.org/schema/context/spring-context-2.5.xsd
+           					http://www.springframework.org/schema/util 
+           					http://www.springframework.org/schema/util/spring-util-2.5.xsd 
+   						    http://camel.apache.org/schema/spring 		
+ 						    http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+	<context:annotation-config/>
+
+	<bean id="extractor" class="com.villemos.ispace.aperture.DocumentProcessor"/>
+		
+	<bean id="constant.fields" class="com.villemos.ispace.enricher.ConstantFields">
+		<property name="constantFields">
+			<map>
+				<entry key="forOrganisation" value="Villemos Solutions"/>
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="title.matcher" class="com.villemos.ispace.enricher.PatternBasedEnricher">
+		<property name="headerFieldName" value="uri"/>
+		<property name="pattern" value="\\(\d+) (.+?)\\(\d+) (.+?)\\(.+?)\\"/>
+		<property name="groups">
+			<map>
+				<entry key="2" value="project"/>
+				<entry key="4" value="system"/>
+				<entry key="5" value="type"/>
+			</map>
+		</property>
+	</bean>
+
+	<bean id="version.matcher.1" class="com.villemos.ispace.enricher.PatternBasedEnricher">
+		<property name="headerFieldName" value="title"/>
+		<property name="pattern" value="(.+?)\s*(i(\d+)r(\d+))*.(docx|ppt|pdf|vsd|pptx)"/>
+		<property name="groups">
+			<map>
+				<entry key="1" value="reference"/>
+				<entry key="3" value="issue"/>
+				<entry key="4" value="revision"/>
+			</map>
+		</property>
+	</bean>
+
+	<bean id="version.matcher.2" class="com.villemos.ispace.enricher.PatternBasedEnricher">
+		<property name="headerFieldName" value="title"/>
+		<property name="pattern" value="(.+?)v(\d+)(.(\d+))*.(docx|ppt|pdf|vsd|pptx)"/>
+		<property name="groups">
+			<map>
+				<entry key="1" value="reference"/>
+				<entry key="2" value="issue"/>
+				<entry key="4" value="revision"/>
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="fileStore" class="org.apache.camel.processor.idempotent.FileIdempotentRepository">
+	    <property name="fileStore" value="c:/test/filestore.dat"/>
+	    <property name="maxFileStoreSize" value="512000"/>
+	    <property name="cacheSize" value="250"/>
+	</bean>
+
+	<bean id="acronym.detector" class="com.villemos.ispace.enricher.AcronymDetector"/>
+
+	<bean id="synonym.consolidator" class="com.villemos.ispace.enricher.SynonymConsolidator">
+		<property name="discreteFields">
+			<list>
+				<value>system</value>
+				<value>project</value>
+				<value>organisation</value>
+				<value>type</value>
+			</list>
+		</property>
+	</bean>
+
+	<camelContext id="context" xmlns="http://camel.apache.org/schema/spring">
+		<template id="producer"/>
+
+		<!-- Route for crawling the files.  -->
+		<route id="FileReader">			
+			<from uri="file://c:/test/testdata?recursive=true&amp;noop=true&amp;consumer.delay=60000&amp;idempotent=true&amp;idempotentRepository=#fileStore" />
+			<split>
+				<method bean="extractor"/>
+				<to uri="bean:constant.fields"/>
+				<to uri="bean:title.matcher"/>
+				<to uri="bean:version.matcher.1"/>
+				<to uri="bean:version.matcher.2"/>
+				<to uri="bean:acronym.detector"/>
+				<to uri="bean:synonym.consolidator"/>
+				<to uri="solr:documentstore?solrServerUrl=http://localhost:8080/apache-solr-1.4.1"/>
+			</split>
+		</route>
+
+		<route id="SynonymBuffer">
+			<from uri="solr:synonymretriever?solrServerUrl=http://localhost:8080/apache-solr-1.4.1&amp;queryHandler=basic&amp;query=type:synonym AND timestamp:[FROMLAST TO *]&amp;delay=60000&amp;initialDelay=0"/>
+			<to uri="bean:synonym.consolidator?method=registerSynonym"/>
+		</route>
+		
+		<route id="Storage">
+			<from uri="direct:store"/>
+			<to uri="solr:storage?solrServerUrl=http://localhost:8080/apache-solr-1.4.1"/>
+		</route>
+		
+	</camelContext>
+	
+</beans>

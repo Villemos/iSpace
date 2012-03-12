@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="	http://www.springframework.org/schema/beans 
+       						http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       						http://www.springframework.org/schema/context
+           					http://www.springframework.org/schema/context/spring-context-2.5.xsd
+           					http://www.springframework.org/schema/util 
+           					http://www.springframework.org/schema/util/spring-util-2.5.xsd 
+   						    http://camel.apache.org/schema/spring 		
+ 						    http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+	<context:annotation-config/>
+
+	<bean id="printer" class="com.villemos.ispace.testclient.DataPrinter"/>
+
+<!--	<bean id="acronymExpanderProxy" class="com.villemos.ispace.core.search.AcronymExpander"/>-->
+<!--	-->
+<!--	<bean id="synonymExpanderProxy" class="com.villemos.ispace.core.search.SynonymExpander"/>-->
+<!--	-->
+<!--	<bean id="taxonomyExpanderProxy" class="com.villemos.ispace.core.search.TaxonomyExpander"/>-->
+
+	<bean id="autoCompletionProxy" class="com.villemos.ispace.core.search.AutoCompletionProxy"/>
+	
+	<camelContext id="context" xmlns="http://camel.apache.org/schema/spring">
+		<template id="producer"/>
+		
+		<route id="TestPrint" autoStartup="true">
+			<from uri="direct:return"/>
+			<to uri="bean:printer"/>
+		</route>
+		
+		<route id="solrSearch">
+			<from uri="direct:solrSearch"/>
+			<to uri="solr:retrieval"/>
+		</route>
+		
+		
+		<route id="TestClient" autoStartup="true">
+			<from uri="testclient:client?printer=#printer&amp;autoCompletionProxy=#autoCompletionProxy" />
+			<to uri="bean:acronymExpanderProxy"/>
+			<to uri="bean:synonymExpanderProxy"/>
+			<to uri="bean:taxonomyExpanderProxy"/>
+			<multicast parallelProcessing="true">
+				<to uri="direct:solrSearch"/>
+				<to uri="webster:webster"/>			
+			</multicast>
+
+		</route>
+				
+	</camelContext>
+	
+</beans>

@@ -1,0 +1,57 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.villemos.ispace</groupId>
+  <artifactId>DirectoryAssembler</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  
+	<parent>
+		<artifactId>base</artifactId>
+		<groupId>com.villemos.ispace</groupId>
+		<version>1.0</version>
+	</parent>
+
+	<licenses>
+		<license>
+			<name>The Apache Software License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+			<distribution>repo, manual</distribution>
+			<comments>iSpace is distributed under a friendly OSS license.</comments>
+		</license>
+	</licenses>
+
+	<repositories>
+	
+		<!-- Dependency for second string -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+	
+	
+		<!-- Repository dependency for Apache Camel. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>mvnrepository</id>
+			<name>mvnrepository</name>
+			<url>http://mvnrepository.com/</url>
+		</repository>
+		
+	</repositories>
+  
+  <dependencies>
+  
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>ktree</artifactId>
+		<version>0.1-SNAPSHOT</version>	  		
+  	</dependency>
+
+  </dependencies>
+  
+</project>
