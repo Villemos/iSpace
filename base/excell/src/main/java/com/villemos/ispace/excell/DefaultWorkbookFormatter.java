@@ -114,10 +114,10 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 			createSheetFormatter(endpoint);
 		}
 
-		/** see if the sheet already exist. */
-		if (sheet == null) {
-			sheet = workbook.getSheet(sheetName);
-		}
+//		/** see if the sheet already exist. */
+//		if (sheet == null) {
+//			sheet = workbook.getSheet(sheetName);
+//		}
 		/** If it doesnt exist, then...*/
 		if (sheet == null) {
 			createSheet(sheetName, workbook, endpoint);
@@ -184,6 +184,9 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 
 	protected void createWorkbook(File newFile, Exchange exchange, ExcellEndpoint endpoint) throws IOException, BiffException {
 
+		if (newFile.getParentFile() != null) {
+			newFile.getParentFile().mkdirs();
+		}
 		workbook = Workbook.createWorkbook(newFile);
 		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");		
 	}
@@ -194,7 +197,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 		
 		/** If the name has not been configured, then use the timestamp format to create a name. */
 		if (newFileName == null) {
-			SimpleDateFormat formatter = new SimpleDateFormat(endpoint.getTimestamp());
+			SimpleDateFormat formatter = new SimpleDateFormat(endpoint.getFilenameDateFormat());
 			newFileName = formatter.format(new Date()); 
 		}
 		

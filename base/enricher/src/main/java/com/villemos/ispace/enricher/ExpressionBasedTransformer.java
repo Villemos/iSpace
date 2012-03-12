@@ -27,14 +27,13 @@ import java.lang.reflect.Field;
 
 import org.apache.camel.Body;
 
-import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.InformationObject;
 
 public class ExpressionBasedTransformer {
 
 	protected String expression = "\\<.*?\\>";	
 
-	protected String fieldName = Fields.withRawText;
+	protected String fieldName = "withRawText";
 
 	protected String replacement = "";
 

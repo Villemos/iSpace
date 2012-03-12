@@ -11,15 +11,16 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.impl.DefaultExchange;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.villemos.ispace.api.Facet;
-import com.villemos.ispace.api.Fields;
-import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
+import com.villemos.ispace.api.SolrOptions;
 
 public class AutoCompletionProxy {
 
 	/** The Camel context used to send the request.*/
+	@Autowired
 	protected CamelContext context = null;
 
 	protected int rows = 10;
@@ -34,7 +35,7 @@ public class AutoCompletionProxy {
 	protected String lastSearch = null;
 	protected String lastFacet = null;
 
-	public Map<String, String> getSuggestions(String search, String facet, String entrySetgType, long count) {
+	public Map<String, String> getSuggestions(String search, String facet, long count) {
 
 		/** The results to be returned to the user. */
 		Map<String, String> results = new LinkedHashMap<String, String>();
@@ -58,7 +59,7 @@ public class AutoCompletionProxy {
 		}
 
 		if (facet == null || facet.equals("") == true) {
-			facet = Fields.spell;
+			facet = "spell";
 		}
 
 		results.clear();
@@ -72,17 +73,17 @@ public class AutoCompletionProxy {
 			lastFacet = facet;
 
 			Exchange exchange = new DefaultExchange(context, ExchangePattern.InOut);
-			exchange.getIn().setHeader(Options.query, "spell:*");
-			exchange.getIn().setHeader(Options.stream, null);
-			exchange.getIn().setHeader(Options.facets, true);
-			exchange.getIn().setHeader(Options.offset, 0);
-			exchange.getIn().setHeader(Options.rows, rows);
-			exchange.getIn().setHeader(Options.facetsort, "count");
-			exchange.getIn().setHeader(Options.facetlimit, -1);
-			exchange.getIn().setHeader(Options.facetprefix, token);
-			exchange.getIn().setHeader(Options.facetfield, facet);
+			exchange.getIn().setHeader(SolrOptions.query, "spell:*");
+			exchange.getIn().setHeader(SolrOptions.stream, null);
+			exchange.getIn().setHeader(SolrOptions.facets, true);
+			exchange.getIn().setHeader(SolrOptions.offset, 0);
+			exchange.getIn().setHeader(SolrOptions.rows, rows);
+			exchange.getIn().setHeader(SolrOptions.facetsort, "count");
+			exchange.getIn().setHeader(SolrOptions.facetlimit, -1);
+			exchange.getIn().setHeader(SolrOptions.facetprefix, token);
+			exchange.getIn().setHeader(SolrOptions.facetfield, facet);
 
-			context.createProducerTemplate().send("direct:search", exchange);
+			context.createProducerTemplate().send("direct:solrSearch", exchange);
 
 			ResultSet data = (ResultSet) exchange.getOut().getBody();
 

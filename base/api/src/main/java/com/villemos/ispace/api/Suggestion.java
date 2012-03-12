@@ -26,8 +26,12 @@ package com.villemos.ispace.api;
 public class Suggestion {
 
 	public String suggestion;
+	public String root;
+	public String fromSource;
 	
-	public Suggestion(String suggestions) {
-		this.suggestion = suggestions;
+	public Suggestion(String root, String suggestion, String fromSource) {
+		this.suggestion = suggestion;
+		this.root = root;
+		this.fromSource = fromSource;
 	}
 }

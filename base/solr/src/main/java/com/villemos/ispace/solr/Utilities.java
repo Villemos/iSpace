@@ -2,19 +2,20 @@ package com.villemos.ispace.solr;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField.Count;
-import org.apache.solr.client.solrj.response.SpellCheckResponse.Suggestion;
 import org.apache.solr.common.SolrDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.villemos.ispace.api.Facet;
-import com.villemos.ispace.api.Fields;
 import com.villemos.ispace.api.InformationObject;
 import com.villemos.ispace.api.ResultSet;
 
@@ -22,7 +23,7 @@ public class Utilities {
 
 	private static final transient Logger LOG = LoggerFactory.getLogger(Utilities.class);
 	
-	public static synchronized ResultSet getResultSet(QueryResponse response, int rows) {
+	public static synchronized ResultSet getResultSet(QueryResponse response, int rows, String query) {
 
 		ResultSet set = new ResultSet();
 
@@ -52,27 +53,32 @@ public class Utilities {
 						if (ioField != null) {					
 
 							/** If this is a 'multivalued' field, insert as a list.  */ 
-							if (ioField.get(io) instanceof List) {
-								Method add = List.class.getDeclaredMethod("addAll",Object.class);
-								/** Should it be 'ioField.get(io)'? */
-								add.invoke(ioField, document.getFieldValues(field));
+							if (ioField.getType() == List.class) {
+								Method add = List.class.getDeclaredMethod("addAll",Collection.class);
+								add.invoke(ioField.get(io), document.getFieldValues(field));
 							}
 							/** Else set only the field.*/
 							else {
-								if (ioField.get(io) instanceof String) {
-									ioField.set(io, document.getFieldValue(field));								
+								if (ioField.getType() == String.class) {
+									ioField.set(io, document.getFieldValue(field).toString());								
 								}
-								else if (ioField.get(io) instanceof Long) {
+								else if (ioField.getType() == long.class || ioField.getType() == Long.class) {
 									ioField.set(io, Long.toString((Long) document.getFieldValue(field)));
 								}
-								else if (ioField.get(io) instanceof Float) {
+								else if (ioField.getType() == float.class || ioField.getType() == Float.class) {
 									ioField.set(io, (Float) document.getFieldValue(field));
 								}
-								else if (ioField.get(io) instanceof Integer) {
+								else if (ioField.getType() == int.class || ioField.getType() == Integer.class) {
 									ioField.set(io, Integer.toString((Integer) document.getFieldValue(field)));
 								}
-								else if (ioField.get(io) instanceof Double) {
+								else if (ioField.getType() == double.class || ioField.getType() == Double.class) {
 									ioField.set(io, Double.toString((Double) document.getFieldValue(field)));
+								}
+								else if (ioField.getType() == URL.class) {
+									ioField.set(io, new URL((String) document.getFieldValue(field)));
+								}
+								else if (ioField.getType() == Date.class) {
+									LOG.warn("Date type not supported.");
 								}
 								else {
 									LOG.warn("Failed to assign value '" + field + "' to IO object. Type '" + ioField.getType().getName() + "' not supported.");
@@ -85,9 +91,9 @@ public class Utilities {
 					}
 
 					/** If this is the unique key, then we can use it to get the highlighting. */
-					if (field.equals(Fields.hasUri)) {
-						if (response.getHighlighting().get(field) != null) {
-							io.highlight = response.getHighlighting().get(field).get(Fields.withRawText);
+					if (field.equals("hasUri")) {
+						if (response.getHighlighting() != null && response.getHighlighting().get(field) != null) {
+							io.highlight = response.getHighlighting().get(field).get("withRawText");
 						}
 					}
 				}
@@ -114,12 +120,12 @@ public class Utilities {
 		set.statistics.totalFound = response.getResults().getNumFound();
 		set.statistics.totalRequested = rows;
 		set.statistics.totalReturned = response.getResults().size();
-		set.statistics.maxScore = response.getResults().getMaxScore();
+		set.statistics.maxScore = response.getResults().getMaxScore() == null ? 0f : response.getResults().getMaxScore();
 
 		/** Get all suggestions. */
 		if (response.getSpellCheckResponse() != null) {
 			for (org.apache.solr.client.solrj.response.SpellCheckResponse.Suggestion suggestion : response.getSpellCheckResponse().getSuggestions()) {
-				set.suggestions.add(new com.villemos.ispace.api.Suggestion(suggestion.toString()));
+				set.suggestions.add(new com.villemos.ispace.api.Suggestion(query, suggestion.toString(), "Solr"));
 			}
 		}
 

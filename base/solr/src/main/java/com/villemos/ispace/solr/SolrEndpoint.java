@@ -30,11 +30,10 @@ import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
 import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.villemos.ispace.api.Fields;
 
 /**
  * The endpoint for production of solr producers. The endpoint does
@@ -69,10 +68,10 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 	protected String solrServerUrl = "http://localhost:8080/apache-solr-3.3.0/";
 
 	/** The solr name of the field holding the content. */
-	protected String contentFieldName = Fields.withRawText.replaceAll("ispace.field.", "");
+	protected String contentFieldName = "withRawText";
 
 	/** The solr name of the field holding the unique ID (required by Solr). */
-	protected String uniqueidFieldName = Fields.hasUri;
+	protected String uniqueidFieldName = "hasUri";
 
 	/** Flag indicating whether the endpoint should automatically assign a unique ID to the entry, if not already set. */
 	protected boolean assignId = true;
@@ -83,10 +82,44 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 	/** The server. Will be initialized upon first access. */
 	protected SolrServer server = null;	
 
-	protected String query = "";
-
 	protected String queryHandler = null;
 
+	protected String[] facetField = {"ofMimeType", "fromSource", "ofEntityType"};
+
+	protected String query = "spell:*";
+
+	protected boolean stream = true;
+
+	protected Boolean facets = false;
+	
+	protected int offset = 0;
+	
+	protected int rows = 10;
+	
+	protected String facetsort = "count";
+	
+	protected int facetlimit = -1;
+
+	protected String facetprefix = "";
+
+	protected String sortField = "score";
+	
+	protected ORDER sortOrder = ORDER.desc;
+
+	protected boolean comments = true;
+	
+	/** Indicates whether the query should only return the count of documents. */
+	protected boolean count = false;
+	
+	/** Flag indicating whether a commit should always be done after a request. */
+	protected boolean commit = false;
+	
+	/** Flag indicating whether the facets returned should include a 
+	 * counter of all entries that do not have the given facet field.  */
+	protected boolean facetMissing = false;
+	
+	protected int minCount = 1;
+	
 	/** Two delivery modes are supported;
 	 * - Batch where all results of the query is delivered in one ResultSet (DEFAULT). 
 	 * - Stream where each element in the results of the query is delivered individually. */
@@ -238,5 +271,129 @@ public class SolrEndpoint extends ScheduledPollEndpoint {
 
 	public void setDeliveryMode(String deliveryMode) {
 		this.deliveryMode = deliveryMode;
+	}
+
+	public String getSolrServerUrl() {
+		return solrServerUrl;
+	}
+
+	public String[] getFacetField() {
+		return facetField;
+	}
+
+	public void setFacetField(String[] facetField) {
+		this.facetField = facetField;
+	}
+	
+	public boolean isStream() {
+		return stream;
+	}
+
+	public void setStream(boolean stream) {
+		this.stream = stream;
+	}
+
+	public Boolean getFacets() {
+		return facets;
+	}
+
+	public void setFacets(Boolean facets) {
+		this.facets = facets;
+	}
+
+	public int getOffset() {
+		return offset;
+	}
+
+	public void setOffset(int offset) {
+		this.offset = offset;
+	}
+
+	public int getRows() {
+		return rows;
+	}
+
+	public void setRows(int rows) {
+		this.rows = rows;
+	}
+
+	public String getFacetsort() {
+		return facetsort;
+	}
+
+	public void setFacetsort(String facetsort) {
+		this.facetsort = facetsort;
+	}
+
+	public int getFacetlimit() {
+		return facetlimit;
+	}
+
+	public void setFacetlimit(int facetlimit) {
+		this.facetlimit = facetlimit;
+	}
+
+	public String getFacetprefix() {
+		return facetprefix;
+	}
+
+	public void setFacetprefix(String facetprefix) {
+		this.facetprefix = facetprefix;
+	}
+
+	public String getSortField() {
+		return sortField;
+	}
+
+	public void setSortField(String sortField) {
+		this.sortField = sortField;
+	}
+
+	public ORDER getSortOrder() {
+		return sortOrder;
+	}
+
+	public void setSortOrder(ORDER sortOrder) {
+		this.sortOrder = sortOrder;
+	}
+
+	public boolean isFacetMissing() {
+		return facetMissing;
+	}
+
+	public void setFacetMissing(boolean facetMissing) {
+		this.facetMissing = facetMissing;
+	}
+
+	public int getMinCount() {
+		return minCount;
+	}
+
+	public void setMinCount(int minCount) {
+		this.minCount = minCount;
+	}
+
+	public boolean isCount() {
+		return count;
+	}
+
+	public void setCount(boolean count) {
+		this.count = count;
+	}
+
+	public boolean isCommit() {
+		return commit;
+	}
+
+	public void setCommit(boolean commit) {
+		this.commit = commit;
+	}
+
+	public boolean isComments() {
+		return comments;
+	}
+
+	public void setComments(boolean comments) {
+		this.comments = comments;
 	}
 }

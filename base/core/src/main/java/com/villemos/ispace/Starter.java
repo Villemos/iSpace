@@ -28,21 +28,28 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
 public class Starter {
 
 	public static void main(String[] args) {
-		
-		/** Read the configuration file as the first argument. If not set, then we try the default name. */
-		String assemblyFile = System.getProperty("ispace.assembly") == null ? "classpath:assembly.xml" : System.getProperty("ispace.assembly");
 
-		new FileSystemXmlApplicationContext(assemblyFile);
-		
-		while(true) {
-			try {
-				Thread.sleep(5000);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
+		System.out.println("Starting iSpace.");
+
+		try {
+			/** Read the configuration file as the first argument. If not set, then we try the default name. */
+			String assemblyFile = System.getProperty("ispace.assembly") == null ? "assembly.xml" : System.getProperty("ispace.assembly");
+
+			System.out.println("Using assembly file " + assemblyFile);
+
+			new FileSystemXmlApplicationContext(assemblyFile);
+
+			while(true) {
+				try {
+					Thread.sleep(5000);
+				}
+				catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
-	}
-
-	
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+	}	
 }

@@ -23,7 +23,11 @@
  */
 package com.villemos.ispace.excell;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.camel.Consumer;
@@ -31,9 +35,6 @@ import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
 
-/**
- * Represents a HelloWorld endpoint.
- */
 public class ExcellEndpoint extends ScheduledPollEndpoint {
 	
 	protected IWorkbookFormatter workbookFormatter = null;
@@ -42,11 +43,18 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	 * be send in a separate exchange. */
 	protected boolean stream = false;
 	
-	/** The name of the input file. */
+	/** The name of the input file. May be dynamically changed by inserting the following
+	 * keywords;
+	 *   '${TIMESTAMP}'. Will be replaced with a timestamp in the format defined by filenameDateFormat.
+	 *   '${ID}'. Will be replaced with the value of the '${ID}' attribute. 
+	 * */
 	protected String filename = null;
 
-	/** Timestamp to be appended to filename. */
-	protected String timestamp = "'excell-output'-yyyy-MM-dd-HH-mm-ss'.xls'";
+	/** Format to be used when the filename ${TIMETSAMP} keyword is set. */
+	protected String filenameDateFormat = "yyyy-MM-dd-HH-mm-ss";
+
+	/** An ID that can be used to dynamically change the filename. */
+	protected String filenameId = null;
 	
 	/** Map of the sheet objects to be used for printing sheets. */
 	protected Map<String, ISheetFormatter> sheets = new HashMap<String, ISheetFormatter> ();
@@ -54,8 +62,14 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	/** Full path to the spreadsheet that is the input template. */
 	protected String template = null;
 
+	protected ExcellFileConsumer consumer = new ExcellFileConsumer(this);
+	
 	/** Name of sheet to be used as generic Template if no template has been set above. */
-	protected String sheetTemplateName = "Template";
+	protected Map<String, String> sheetTemplateNames = new HashMap<String, String>();
+	{
+		sheetTemplateNames.put("Template", "Template");
+		sheetTemplateNames.put("Statistics", "Statistics");
+	}
 
 	/** The sheet formatter to be used if no other is specified. */
 	protected ISheetFormatter sheetTemplateFormatter = new DefaultSheetFormatter();
@@ -75,8 +89,9 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	protected int endRow = -1;
 	
 	/** Format to be used when dates are written / read in as strings. */
-	protected String dateFormat = null;
-	
+	/** Date formatter: "09:04:00 2011" */
+	protected String dateFormat = "EEE MMM d HH:mm:ss z yyyy";
+
 	/** The fully qualified name of the class to be created. Can be used if no column in the 
 	 * spreadsheet contains the class name. */
 	protected String className = null;
@@ -84,10 +99,14 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	/** The column holding the class definition. Default value is 0. If the className is set, then
 	 * this value is ignored. */
 	protected int classColumn = 0;
+
+	protected String defaultEncoding = "string";
 	
 	/** Defines whether data will be appended to the end of the excell spreadsheet or a new sheet created. */
 	protected boolean appendMode = false;
 	
+	protected boolean sendStatus = false;
+
 	public ExcellEndpoint() {
     }
 
@@ -137,19 +156,25 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	}
 
 	public String getFilename() {
+
+		if (filename.contains("TIMESTAMP")) {
+			DateFormat df = new SimpleDateFormat(filenameDateFormat, Locale.UK);
+			filename = filename.replaceAll("TIMESTAMP", df.format(new Date()));
+		}
+		
+		if (filename.contains("FILENAMEID")) {
+			filename = filename.replaceAll("FILENAMEID", filenameId);
+		}		
+		
 		return filename;
 	}
 
 	public void setFilename(String filename) {
 		this.filename = filename;
-	}
-
-	public String getTimestamp() {
-		return timestamp;
-	}
-
-	public void setTimestamp(String timestamp) {
-		this.timestamp = timestamp;
+		
+		if (this.filename.endsWith(".xls") == false) {
+			this.filename = this.filename + ".xls";
+		}
 	}
 
 	public Map<String, ISheetFormatter> getSheets() {
@@ -168,12 +193,14 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 		this.template = template;
 	}
 
-	public String getSheetTemplateName() {
-		return sheetTemplateName;
+	
+	
+	public Map<String, String> getSheetTemplateNames() {
+		return sheetTemplateNames;
 	}
 
-	public void setSheetTemplateName(String sheetTemplateName) {
-		this.sheetTemplateName = sheetTemplateName;
+	public void setSheetTemplateNames(Map<String, String> sheetTemplateNames) {
+		this.sheetTemplateNames = sheetTemplateNames;
 	}
 
 	public ISheetFormatter getSheetTemplateFormatter() {
@@ -239,4 +266,46 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	public void setAppendMode(boolean appendMode) {
 		this.appendMode = appendMode;
 	}
+
+	public String getDefaultEncoding() {
+		return defaultEncoding;
+	}
+
+	public void setDefaultEncoding(String defaultEncoding) {
+		this.defaultEncoding = defaultEncoding;
+	}
+
+	public ExcellFileConsumer getConsumer() {
+		return consumer;
+	}
+
+	public void setConsumer(ExcellFileConsumer consumer) {
+		this.consumer = consumer;
+	}
+
+	public boolean isSendStatus() {
+		return sendStatus;
+	}
+
+	public void setSendStatus(boolean sendStatus) {
+		this.sendStatus = sendStatus;
+	}
+
+	public String getFilenameId() {
+		return filenameId;
+	}
+
+	public void setFilenameId(String filenameId) {
+		this.filenameId = filenameId;
+	}
+
+	public String getFilenameDateFormat() {
+		return filenameDateFormat;
+	}
+
+	public void setFilenameDateFormat(String filenameDateFormat) {
+		this.filenameDateFormat = filenameDateFormat;
+	}
+	
+	
 }

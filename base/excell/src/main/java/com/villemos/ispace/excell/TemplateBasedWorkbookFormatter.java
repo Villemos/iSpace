@@ -87,8 +87,15 @@ public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 
 	@Override
 	protected void createSheet(String sheetName, WritableWorkbook workbook, ExcellEndpoint endpoint) throws RowsExceededException, WriteException {
-		/** See if we have a default template which we should use. */
-		sheet = workbook.getSheet(endpoint.getSheetTemplateName());
+
+		/** See if we have a template defined for this sheet name to use. */
+		sheet = workbook.getSheet(endpoint.getSheetTemplateNames().get(sheetName));
+		
+		/** If we didnt find a specific template for this sheet, then see if we have a "Template" sheet defined. */
+		if (sheet == null) {
+			sheet = workbook.getSheet(endpoint.getSheetTemplateNames().get("Template"));
+		} 
+		
 		if (sheet != null) {
 			WritableSheet newSheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
 			copySheet(sheet, newSheet);
@@ -107,6 +114,9 @@ public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 		Workbook workbookIn = Workbook.getWorkbook(new File(templateName));
 
 		/** Copy it to the new workbook. */
+		if (newFile.getParentFile() != null) {
+			newFile.getParentFile().mkdirs();
+		}
 		workbook = Workbook.createWorkbook(newFile, workbookIn);
 		
 		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");
@@ -126,5 +136,6 @@ public class TemplateBasedWorkbookFormatter extends DefaultWorkbookFormatter {
 		}
 		sheet = null;
 		sheetFormatter = null;
+		LOG.info("Done");
 	}
 }

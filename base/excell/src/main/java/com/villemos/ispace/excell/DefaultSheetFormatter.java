@@ -23,7 +23,9 @@
  */
 package com.villemos.ispace.excell;
 
+import java.io.File;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +36,8 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.thoughtworks.xstream.XStream;
 
 import jxl.write.DateTime;
 import jxl.write.Label;
@@ -52,6 +56,8 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 	 * type is configured explicitly on the Excell consumer). */
 	public boolean includeClassName = true;	
 
+	protected XStream xstream = new XStream();
+	
 	@Override
 	public void add(Collection objects, WritableSheet sheet, ExcellEndpoint endpoint) {
 
@@ -84,6 +90,7 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 					classFields.put(object.getClass().getName(), fields);
 				}
 
+				Integer[] columnWidth = new Integer[100];
 				/** Go through all fields we need to insert for this kind of object. */
 				for (Field field : fields) {
 
@@ -96,7 +103,7 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 					/** Ensure that we can access the field. */
 					field.setAccessible(true);
 
-					insertCell(field, sheet, columns.get(field.getName()), row, object);
+					insertCell(field.getType(), field.get(object), sheet, columns.get(field.getName()), row, endpoint, columnWidth);
 				} 
 			}
 			catch (Exception e) {
@@ -107,17 +114,103 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 		}		
 	}
 
-	protected void insertCell(Field field, WritableSheet sheet, int column, int row, Object object) throws RowsExceededException, WriteException, IllegalArgumentException, IllegalAccessException {
+	protected void insertCell(Class<?> type, Object value, WritableSheet sheet, int column, int row, ExcellEndpoint endpoint, Integer[] columnWidth) throws RowsExceededException, WriteException, IllegalArgumentException, IllegalAccessException {
+		
+		if (value == null) {
+			LOG.error("");
+			return;
+		}
 
 		/** Dates are weird and must be handled explicitly. */
-		if (field.getType().getName().equals(Date.class.getName())) {
-			sheet.addCell(new DateTime(column, row, (Date) field.get(object)));								
+		if (type.getName().equals(Date.class.getName())) {						
+			if (value == null) {
+				sheet.addCell(new Label(column, row, "No data"));
+				
+				if (columnWidth[column] == null || 7 > columnWidth[column]) {
+					columnWidth[column] = 7;
+				}
+			}
+			else {
+				Date date = (Date) value;
+				DateTime dateCell = new DateTime(column, row, date); 
+				sheet.addCell(dateCell);
+				
+				if (columnWidth[column] == null || date.toString().length() > columnWidth[column]) {
+					columnWidth[column] = date.toString().length();
+				}
+			}
 		}
-		else if (field.getType().getName().equals(URL.class.getName())) {
-			sheet.addHyperlink(new WritableHyperlink(column, row, (URL) field.get(object)));
+		else if (type.getName().equals(Integer.class.getName())) {
+			if (value == null) {
+				sheet.addCell(new Label(column, row, "No data"));
+				
+				if (columnWidth[column] == null || 7 > columnWidth[column]) {
+					columnWidth[column] = 7;
+				}
+			}
+			else {
+				Double newValue = new Double(value.toString());
+				sheet.addCell(new jxl.write.Number(column, row, newValue));
+			}
+		}		
+		else if (type.getName().equals(URL.class.getName())) {
+			if (value == null) {
+				sheet.addCell(new Label(column, row, "No data"));
+				
+				if (columnWidth[column] == null  || 7 > columnWidth[column]) {
+					columnWidth[column] = 7;
+				}
+			}
+			else {
+				String link = ((URL) value).toString();
+				if (link.contains("file:")) {
+					File newFile = new File(link.replaceAll("file:.", "./"));
+					sheet.addHyperlink(new WritableHyperlink(column, row, newFile));				
+				}
+				else {			
+					sheet.addHyperlink(new WritableHyperlink(column, row, (URL) value));
+				}
+				
+				if (columnWidth[column] == null || link.length() > columnWidth[column]) {
+					columnWidth[column] = link.length();
+				}
+			}
+		}
+		else if (value != null && value.toString().startsWith("https://")) {
+			try {
+				URL url = new URL(value.toString());
+				sheet.addHyperlink(new WritableHyperlink(column, row, url));
+				
+				if (columnWidth[column] == null || url.toString().length() > columnWidth[column]) {
+					columnWidth[column] = url.toString().length();
+				}
+
+			} catch (MalformedURLException e) {
+				e.printStackTrace();
+			}
 		}
 		else {
-			sheet.addCell(new Label(column, row, field.get(object).toString()));
+			if (value == null || value.toString().equals("")) {
+				sheet.addCell(new Label(column, row, "No data"));
+				
+				if (columnWidth[column] == null  || 7 > columnWidth[column]) {
+					columnWidth[column] = 7;
+				}
+			}
+			else {
+				String strValue = "";
+				if (endpoint.getDefaultEncoding().equals("string")) {
+					strValue = value.toString().replaceAll("&ndash;", "-");
+				}
+				else {
+					strValue = xstream.toXML(value);
+				}
+				sheet.addCell(new Label(column, row, strValue));
+				
+				if (columnWidth[column] == null || strValue.length() > columnWidth[column]) {
+					columnWidth[column] = strValue.length();
+				}
+			}
 		}
 	}
 

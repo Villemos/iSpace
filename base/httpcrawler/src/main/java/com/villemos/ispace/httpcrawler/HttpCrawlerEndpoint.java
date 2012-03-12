@@ -21,9 +21,12 @@
  * And it wouldn't be nice either.
  * 
  */
+
 package com.villemos.ispace.httpcrawler;
 
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -68,6 +71,8 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 
 	protected String consumerClassName = "com.villemos.ispace.httpcrawler.HttpCrawlerConsumer";
 
+	protected List<String> boundaries = new ArrayList<String>();
+	
 	public HttpCrawlerEndpoint(String uri, HttpCrawlerComponent component) {
 		super(uri, component);
 	}
@@ -175,6 +180,11 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 	}
 
 	public String getDomain() {
+
+		if (domain == null) {
+			setUrl(url);
+		}		
+
 		return domain;
 	}
 
@@ -183,6 +193,10 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 	}
 
 	public String getPath() {
+		if (path == null) {
+			setUrl(url);
+		}		
+
 		return path;
 	}
 
@@ -229,5 +243,14 @@ public class HttpCrawlerEndpoint extends ScheduledPollEndpoint {
 	public void setSourceName(String sourceName) {
 		this.sourceName = sourceName;
 	}
-	
+
+	public List<String> getBoundaries() {
+		return boundaries;
+	}
+
+	public void setBoundaries(String boundaries) {
+		for (String boundary : boundaries.split(":")) {
+			this.boundaries.add(boundary);
+		}
+	}
 }

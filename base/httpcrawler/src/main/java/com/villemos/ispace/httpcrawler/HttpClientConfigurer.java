@@ -117,6 +117,7 @@ public class HttpClientConfigurer {
 		return client;
 	}
 	
+	
 	public static String readFully(InputStream input) throws IOException {
 
 		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(input));

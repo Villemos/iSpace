@@ -21,8 +21,26 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.webster;
+package com.villemos.ispace.directoryassembler;
 
-public class WebsterParser {
+import org.apache.camel.Endpoint;
 
+import com.villemos.ispace.httpcrawler.HttpCrawlerComponent;
+import com.villemos.ispace.ktree.KtreeCrawlerComponent;
+
+import java.util.Map;
+
+/**
+ * Represents the component that manages {@link DocumentAssemblerEndpoint}. It holds the
+ * list of named direct endpoints.
+ *
+ * @version
+ */
+public class DocumentAssemblerComponent extends KtreeCrawlerComponent {
+
+    protected Endpoint createEndpoint(String uri, String remaining, Map parameters) throws Exception {
+        Endpoint endpoint = new DocumentAssemblerEndpoint(uri, this);
+        setProperties(endpoint, parameters);
+        return endpoint;
+    }
 }

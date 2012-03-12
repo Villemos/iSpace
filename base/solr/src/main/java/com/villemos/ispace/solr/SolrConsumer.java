@@ -84,7 +84,7 @@ public class SolrConsumer extends ScheduledPollConsumer {
 		}
 
 		/** Get the result set. */
-		ResultSet results = Utilities.getResultSet(response, (int) response.getResults().getNumFound());
+		ResultSet results = Utilities.getResultSet(response, (int) response.getResults().getNumFound(), queryString);
 
 		/** Either deliver the complete result set as on batch, or as a stream. */
 		if (getSolrEndpoint().getDeliveryMode().equals("batch")) {

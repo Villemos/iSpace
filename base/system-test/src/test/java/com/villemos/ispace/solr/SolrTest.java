@@ -13,10 +13,9 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit38.AbstractJUnit38SpringContextTests;
 
-import com.villemos.ispace.api.BufferedCallbackClient;
 import com.villemos.ispace.api.InformationObject;
-import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
+import com.villemos.ispace.api.SolrOptions;
 
 @ContextConfiguration (locations={"SolrTest-context.xml"})
 public class SolrTest extends AbstractJUnit38SpringContextTests  {
@@ -32,24 +31,24 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 
 	@Produce(uri = "direct:retrieve")
 	protected ProducerTemplate retrieveRoute = null;
-
+	
 	@DirtiesContext
 	@Test
 	public void testSolrAccess() {
 
 		/** Test deletion. */
 		Exchange exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.delete, null);
-		exchange.getIn().getHeaders().put(Options.query, "*:*");
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.delete, "*:*");
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);		
 
 		/** Ensure the local archive is empty. */
 		Exchange countExchange = new DefaultExchange(context);
-		countExchange.getIn().getHeaders().put(Options.count, "");
-		countExchange.getIn().getHeaders().put(Options.query, "*:*");
+		countExchange.getIn().getHeaders().put(SolrOptions.count, true);
+		countExchange.getIn().getHeaders().put(SolrOptions.query, "*:*");
+		countExchange.getIn().getHeaders().put(SolrOptions.stream, false);
 		storeRoute.send(countExchange);
-		assertTrue((Long) countExchange.getOut().getHeaders().get(Options.count) == 0);
+		assertTrue((Integer) countExchange.getOut().getHeaders().get(SolrOptions.count) == 0);
 
 
 		/** Inject a IO object. */
@@ -77,7 +76,7 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 
 		exchange = new DefaultExchange(context);
 		exchange.getIn().setBody(io);
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);
 
 		/** Inject a second one. */
@@ -105,7 +104,7 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 
 		exchange = new DefaultExchange(context);
 		exchange.getIn().setBody(io);
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);
 
 		/** Insert a comment. */
@@ -128,109 +127,108 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 
 		exchange = new DefaultExchange(context);
 		exchange.getIn().setBody(io);
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);
 
 
 		/** Do a count search. */
 		storeRoute.send(countExchange);
-		assertTrue((Long) countExchange.getOut().getHeaders().get(Options.count) == 3);
+		assertTrue((Integer) countExchange.getOut().getHeaders().get(SolrOptions.count) == 3);
 
 
 		/** Search WITHOUT comments. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDTWO");
+		exchange.getIn().setHeader(SolrOptions.count, false);
+		exchange.getIn().setHeader(SolrOptions.comments, false);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDTWO");
 		storeRoute.send(exchange);
-		assertTrue((Integer) exchange.getOut().getHeader(Options.count) == 1);
+		assertTrue((Integer) exchange.getOut().getHeader(SolrOptions.count) == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.size() == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.get(0).comments.size() == 0);
 
 
 		/** Search WITH comments. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDTWO");
-		exchange.getIn().getHeaders().put(Options.comments, null);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDTWO");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
 		storeRoute.send(exchange);
-		assertTrue((Integer) exchange.getOut().getHeader(Options.count) == 1);
+		assertTrue((Integer) exchange.getOut().getHeader(SolrOptions.count) == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.size() == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.get(0).comments.size() == 1);
 
 
 		/** Search WITH facets. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDTWO");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDTWO");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
 		storeRoute.send(exchange);
-		assertTrue((Integer) exchange.getOut().getHeader(Options.count) == 1);
+		assertTrue((Integer) exchange.getOut().getHeader(SolrOptions.count) == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.size() == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.get(0).comments.size() == 1);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).facets.size() > 0);
 
 		/** Test deletion of a single IO. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.delete, "testUriOne");
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.delete, "hasUri:testUriOne");
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);
 
 		/** Search WITH comments for teh document we just deleted, i.e. should not find anything. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDONE");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDONE");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
 		storeRoute.send(exchange);
-		assertTrue((Integer) exchange.getOut().getHeader(Options.count) == 0);
+		assertTrue((Integer) exchange.getOut().getHeader(SolrOptions.count) == 0);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).informationobjects.size() == 0);
 		assertTrue(((ResultSet) exchange.getOut().getBody()).facets.size() > 0);
 
-		/** Test streaming. */
-		BufferedCallbackClient client = new BufferedCallbackClient();
-
 		/** Search WITHOUT comments. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDTWO");
-		exchange.getIn().getHeaders().put(Options.stream, client);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDTWO");
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 1);
-		assertTrue(client.getInformationObjects().get(0).comments.size() == 0);
-
-		client.clear();
+		
+		assertTrue(RetrievalBuffer.buffer.io.size() == 1);
+		assertTrue(RetrievalBuffer.buffer.io.get(0).comments.size() == 0);
+		RetrievalBuffer.buffer.clear();
 
 		/** Search WITH comments. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDTWO");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDTWO");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 1);
-		assertTrue(client.getInformationObjects().get(0).comments.size() == 1);
 
-		client.clear();
+		assertTrue(RetrievalBuffer.buffer.io.size() == 1);
+		assertTrue(RetrievalBuffer.buffer.io.get(0).comments.size() == 1);
+		RetrievalBuffer.buffer.clear();
 
 		/** Search WITH facets. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDTWO");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDTWO");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 1);
-		assertTrue(client.getInformationObjects().get(0).comments.size() == 1);
-		assertTrue(client.getFacets().size() > 0);
 
-		client.clear();
+		assertTrue(RetrievalBuffer.buffer.io.size() == 1);
+		assertTrue(RetrievalBuffer.buffer.io.get(0).comments.size() == 1);
+		assertTrue(RetrievalBuffer.buffer.facet.size() > 0);
+		RetrievalBuffer.buffer.clear();
 
 		/** Search WITH facets that should not return anything. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "KEYWORDONE");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "KEYWORDONE");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 0);
-		assertTrue(client.getFacets().size() > 0);
 
-		client.clear();
+		assertTrue(RetrievalBuffer.buffer.io.size() == 0);
+		assertTrue(RetrievalBuffer.buffer.facet.size() > 0);
+		RetrievalBuffer.buffer.clear();
 	}
 
 	@DirtiesContext
@@ -239,17 +237,17 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 
 		/** Test deletion. */
 		Exchange exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.delete, null);
-		exchange.getIn().getHeaders().put(Options.query, "*:*");
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.delete, "*:*");
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);		
 
 		/** Ensure the local archive is empty. */
 		Exchange countExchange = new DefaultExchange(context);
-		countExchange.getIn().getHeaders().put(Options.count, "");
-		countExchange.getIn().getHeaders().put(Options.query, "*:*");
+		countExchange.getIn().getHeaders().put(SolrOptions.count, true);
+		countExchange.getIn().getHeaders().put(SolrOptions.stream, false);
+		countExchange.getIn().getHeaders().put(SolrOptions.query, "*:*");
 		storeRoute.send(countExchange);
-		assertTrue((Long) countExchange.getOut().getHeaders().get(Options.count) == 0);
+		assertTrue((Integer) countExchange.getOut().getHeaders().get(SolrOptions.count) == 0);
 
 
 		/** Inject a high number of documents, without forcing a commit. */
@@ -280,6 +278,7 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 			io.dynamic.put("1.testDynamicField2", "testDynamicFieldValue.1");
 
 			exchange = new DefaultExchange(context);
+			exchange.getIn().setHeader(SolrOptions.commit, false);
 			exchange.getIn().setBody(io);
 			storeRoute.send(exchange);
 		}
@@ -310,6 +309,11 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 			io.dynamic.put("1.testDynamicField2", "testDynamicFieldValue.1");
 
 			exchange = new DefaultExchange(context);
+			
+			if (count == 3000) {
+				exchange.getIn().setHeader(SolrOptions.commit, true);
+			}
+			
 			exchange.getIn().setBody(io);
 			storeRoute.send(exchange);
 		}
@@ -322,82 +326,84 @@ public class SolrTest extends AbstractJUnit38SpringContextTests  {
 		
 		/** Force commit. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.commit, null);
+		exchange.getIn().getHeaders().put(SolrOptions.commit, true);
 		storeRoute.send(exchange);
 
 		start = new Date();
 		
-		/** Retrieve. */
-		BufferedCallbackClient client = new BufferedCallbackClient();
-		
 		/** Search WITH facets, retrieving an EQUAL number of 100. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "test");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
-		exchange.getIn().getHeaders().put(Options.rows, 500);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "test");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
+		exchange.getIn().getHeaders().put(SolrOptions.rows, 500);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 500);
-		assertTrue(client.getFacets().size() > 0);
+
+		assertTrue(RetrievalBuffer.buffer.io.size() == 500);
+		assertTrue(RetrievalBuffer.buffer.facet.size() > 0);
 
 		end = new Date();
 		duration = (double) (end.getTime() - start.getTime()) / 1000d;
 		logger.info("Retrieved 500 entries in " + duration + " seconds. An average of " + 500 / duration + " entries per second.");
 		start = new Date();
 		
-		client.clear();
+		RetrievalBuffer.buffer.clear();
 
 		/** Search WITH facets, retrieving an DECIMAL number of 100. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "test");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
-		exchange.getIn().getHeaders().put(Options.rows, 175);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "test");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
+		exchange.getIn().getHeaders().put(SolrOptions.rows, 175);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 175);
-		assertTrue(client.getFacets().size() > 0);
+
+		assertTrue(RetrievalBuffer.buffer.io.size() == 175);
+		assertTrue(RetrievalBuffer.buffer.facet.size() > 0);
 
 		end = new Date();
 		duration = (double) (end.getTime() - start.getTime()) / 1000d;
 		logger.info("Retrieved 175 entries in " + duration + " seconds. An average of " + 175 / duration + " entries per second.");
 		start = new Date();
 
-		client.clear();
+		RetrievalBuffer.buffer.clear();
 
 		/** Search WITH facets, retrieving LESS than 100. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "test");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
-		exchange.getIn().getHeaders().put(Options.rows, 50);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "test");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
+		exchange.getIn().getHeaders().put(SolrOptions.rows, 50);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 50);
-		assertTrue(client.getFacets().size() > 0);
+		
+		assertTrue(RetrievalBuffer.buffer.io.size() == 50);
+		assertTrue(RetrievalBuffer.buffer.facet.size() > 0);
 
 		end = new Date();
 		duration = (double) (end.getTime() - start.getTime()) / 1000d;
 		logger.info("Retrieved 50 entries in " + duration + " seconds. An average of " + 50 / duration + " entries per second.");
 		start = new Date();
 
-		client.clear();
+		RetrievalBuffer.buffer.clear();
 		
 		/** Search WITH facets, retrieving MORE than 3000. */
 		exchange = new DefaultExchange(context);
-		exchange.getIn().getHeaders().put(Options.query, "test");
-		exchange.getIn().getHeaders().put(Options.comments, null);
-		exchange.getIn().getHeaders().put(Options.facets, null);
-		exchange.getIn().getHeaders().put(Options.stream, client);
-		exchange.getIn().getHeaders().put(Options.rows, 4000);
+		exchange.getIn().getHeaders().put(SolrOptions.query, "test");
+		exchange.getIn().getHeaders().put(SolrOptions.comments, true);
+		exchange.getIn().getHeaders().put(SolrOptions.facets, true);
+		exchange.getIn().getHeaders().put(SolrOptions.stream, true);
+		exchange.getIn().getHeaders().put(SolrOptions.rows, 4000);
 		storeRoute.send(exchange);
-		assertTrue(client.getInformationObjects().size() == 3000);
-		assertTrue(client.getFacets().size() > 0);
+
+		assertTrue(RetrievalBuffer.buffer.io.size() == 3000);
+		assertTrue(RetrievalBuffer.buffer.facet.size() > 0);
 
 		end = new Date();
 		duration = (double) (end.getTime() - start.getTime()) / 1000d;
 		logger.info("Retrieved 3000 entries in " + duration + " seconds. An average of " + 3000 / duration + " entries per second.");
 
+		RetrievalBuffer.buffer.clear();
 	}	
 }

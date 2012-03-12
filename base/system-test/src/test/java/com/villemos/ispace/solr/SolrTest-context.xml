@@ -10,6 +10,8 @@
        http://camel.apache.org/schema/spring/camel-spring.xsd">
 
 
+	<bean id="buffer" class="com.villemos.ispace.solr.RetrievalBuffer"/>
+
 	<camelContext id="context" xmlns="http://camel.apache.org/schema/spring">
 		<template id="producer"/>
 
@@ -21,6 +23,11 @@
 		<route>
 			<from uri="direct:retrieve" />
 			<to uri="solr:retrieve"/>
+		</route>
+
+		<route>
+			<from uri="direct:results" />
+			<to uri="bean:buffer"/>
 		</route>
 	
 	</camelContext>

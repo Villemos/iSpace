@@ -48,8 +48,6 @@ import org.apache.poi.hpsf.Section;
 import org.apache.poi.poifs.eventfilesystem.POIFSReaderListener;
 import org.apache.poi.util.HexDump;
 
-import com.villemos.ispace.api.Fields;
-
 public class MicrosoftPropertyReader implements POIFSReaderListener {
 
 	private static org.apache.log4j.Logger Logger = org.apache.log4j.Logger.getLogger(MicrosoftPropertyReader.class);

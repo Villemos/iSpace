@@ -23,21 +23,18 @@
  */
 package com.villemos.ispace.excell;
 
-import java.lang.reflect.Field;
-import java.util.Iterator;
-import java.util.Map.Entry;
-
 import org.apache.camel.Exchange;
 import org.apache.camel.Handler;
 import org.apache.camel.impl.DefaultProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.villemos.ispace.core.utilities.EndpointConfigurer;
+
 public class ExcellProducer extends DefaultProducer {
 
 	private static final transient Logger LOG = LoggerFactory.getLogger(ExcellProducer.class);
 
-	/** The endpoint which this producer has been created from. */
 	private ExcellEndpoint endpoint;
 
 	public ExcellProducer(ExcellEndpoint endpoint) {
@@ -48,30 +45,13 @@ public class ExcellProducer extends DefaultProducer {
 	@Override
 	@Handler
 	public void process(Exchange exchange) throws Exception {
+		EndpointConfigurer.configure(exchange.getIn().getHeaders(), endpoint, "excell");
 
-		/** Extract the Excell header configuration fields and set them on the
-		 * endpoint. This can be used to reconfigure any endpoint fields 
-		 * dynamically. */
-		Iterator<Entry<String, Object>> it = exchange.getIn().getHeaders().entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<String, Object> entry = it.next();
-			String headerEntryName = entry.getKey();
-
-			/** If the field has the format 'excell.[field name]', then set the endpoint
-			 * field accordingly. */
-			if (headerEntryName.startsWith("excell.")) {
-				String fieldName = headerEntryName.replaceAll("excell.", "");
-				try {
-					Field field = endpoint.getClass().getDeclaredField(fieldName);
-					field.setAccessible(true);
-					field.set(endpoint, entry.getValue());
-				}
-				catch (Exception e) {
-					LOG.error("The exchange contains the header field '" + entry.getKey() + "'. The field '" + fieldName + "' is not a valid configuration field of the Excell Component.");
-				}
-			}
+		if (exchange.getIn().getBody() == null) {
+			endpoint.getConsumer().consume(exchange);
 		}
-
-		endpoint.getWorkbookFormatter().add(exchange, (ExcellEndpoint) getEndpoint());
+		else {
+			endpoint.getWorkbookFormatter().add(exchange, (ExcellEndpoint) getEndpoint());
+		}
 	}
 }

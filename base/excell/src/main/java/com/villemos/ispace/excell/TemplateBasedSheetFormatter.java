@@ -25,6 +25,7 @@
 package com.villemos.ispace.excell;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,12 +55,15 @@ public class TemplateBasedSheetFormatter extends DefaultSheetFormatter {
 		Map<String, Integer> name2id = new HashMap<String, Integer>();
 
 		Map<String, String> fieldNamesFromComments = new HashMap<String, String>();
-		Pattern fieldInComment = Pattern.compile("field=\'(.*?)\'");
+		Pattern fieldInComment = Pattern.compile("field:\'(.*?)\'");
 
+		Integer[] columnWidth = new Integer[sheet.getColumns()];
+		
 		int column = 0;
 		while (column < sheet.getColumns()) {
 			if (sheet.getCell(column, 0).getClass() != jxl.biff.EmptyCell.class) {
 				String columnName = sheet.getCell(column, 0).getContents().toString();
+				columnWidth[column] = columnName.length();
 				name2id.put(columnName, column);
 
 				/** See if there is a comment. If yes, see if it contains entries in the format
@@ -99,30 +103,57 @@ public class TemplateBasedSheetFormatter extends DefaultSheetFormatter {
 			while (it.hasNext()) {
 				Entry<String, String> entry = it.next();
 
-				/** Get field from object. */
-				try {
-					Field field = object.getClass().getField(entry.getKey());
+				/** If this is a simple field map. */
+				if (entry.getKey().contains("#") == false) {
+					/** Get field from object. */
+					try {
+						Field field = object.getClass().getField(entry.getKey());
 
-					field.setAccessible(true);
+						field.setAccessible(true);
 
-					String fieldName = field.getName();
-					String columnName = fieldNames.get(fieldName);
+						String fieldName = field.getName();
+						String columnName = fieldNames.get(fieldName);
 
-					if (columnName == null) {
-						LOG.error("Column name '" + fieldName + "' not configured!");
+						if (columnName == null) {
+							LOG.error("Column name '" + fieldName + "' not configured!");
+						}
+
+						column = name2id.get(columnName);
+
+						insertCell(field.getType(), field.get(object), sheet, column, row, endpoint, columnWidth);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}				
+				}
+				else {
+					/** We need to get the value from a map. */
+					String[] elements = entry.getKey().split("#");
+					Class partypes[] = new Class[1];
+					partypes[0] = String.class;
+					try {
+						Method method = object.getClass().getMethod("get", partypes);
+
+						String columnName = fieldNames.get(entry.getKey());
+						column = name2id.get(columnName);
+
+						/** Get the object. */
+						Object value = method.invoke(object, elements[1]);
+						insertCell(value.getClass(), value, sheet, column, row, endpoint, columnWidth);						
+					} catch (Exception e) {
+						e.printStackTrace();
 					}
-
-					column = name2id.get(columnName);
-
-					insertCell(field, sheet, column, row, object);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}				
+				}
 			}
 
 			row++;
 		}	
-		
+
+		for (int index = 0; index < columnWidth.length; index++) {
+			if (columnWidth[index] != null) {
+				sheet.setColumnView(index, columnWidth[index]);
+			}
+		}
+
 		/** If in append mode, then set the row on the endpoint so that we start from that point. */
 		if (endpoint.isAppendMode()) {
 			endpoint.setStartRow(row);

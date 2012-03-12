@@ -69,6 +69,9 @@
 		<module>api</module>
 		<module>api-rmi</module>
 		<module>api-camel</module>
+<!--		<module>webgui</module>-->
+		<module>testclient</module>
+		<module>DirectoryAssembler</module>
 	</modules>
 
 	<properties>
@@ -95,7 +98,6 @@
 		<httpclient.version>4.1.1</httpclient.version>
 		<ispace.version>0.1-SNAPSHOT</ispace.version>
 	</properties>
-
 
 	<dependencyManagement>
 		<dependencies>

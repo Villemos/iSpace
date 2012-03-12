@@ -35,6 +35,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.impl.DefaultProducer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
@@ -66,8 +67,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.villemos.ispace.api.InformationObject;
-import com.villemos.ispace.api.Options;
 import com.villemos.ispace.api.ResultSet;
+import com.villemos.ispace.api.SolrOptions;
 import com.villemos.ispace.api.Suggestion;
 import com.villemos.ispace.httpcrawler.EasyX509TrustManager;
 import com.villemos.ispace.httpcrawler.HttpClientConfigurer;
@@ -155,64 +156,84 @@ public class WebsterProducer extends DefaultProducer {
 		if (getWebsterEndpoint().getPort() != 80) {
 			uriStr += ":" + getWebsterEndpoint().getPort() + "/" + getWebsterEndpoint().getPath();
 		}
-		String word = (String) exchange.getIn().getHeader(Options.query);
-		uriStr += "/" + word;
-		URI uri = new URI(uriStr);
 
-		if (getWebsterEndpoint().getPort() != 80) {
-			target = new HttpHost(getWebsterEndpoint().getDomain(), getWebsterEndpoint().getPort(), getWebsterEndpoint().getProtocol());
-		}
-		else {
-			target = new HttpHost(getWebsterEndpoint().getDomain());
-		}
-		localContext = new BasicHttpContext();
-		localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
+		/** Break the query into its elements and search for each. */
+		for (String word : ((String)exchange.getIn().getHeader(SolrOptions.query)).split("\\s+")) {
+			uriStr += "/" + word;
+			URI uri = new URI(uriStr);
 
-		HttpUriRequest method = new HttpGet(uri);			
-		HttpResponse response = client.execute(target, method, localContext);
-
-		if (response.getStatusLine().getStatusCode() == 200) {
-			/** Extract result. */
-			String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
-
-			ResultSet set = new ResultSet();
-
-			Matcher matcher = pattern.matcher(page);
-			if (matcher.find()) {
-				String result = matcher.group(1).replaceAll("\\<.*?\\>", "").replaceAll("\\s+", " ");
-
-				/** Create ResultSet*/
-				InformationObject io = new InformationObject();
-				io.hasUri = uriStr;
-				io.fromSource = "Webster";
-				io.hasTitle = "Webster definition of '" + word + "'.";
-				io.ofEntityType = "Definition";
-				io.ofMimeType = "text/html";
-				io.withRawText = result;
-				io.score = 20;		
-				set.informationobjects.add(io);
+			if (getWebsterEndpoint().getPort() != 80) {
+				target = new HttpHost(getWebsterEndpoint().getDomain(), getWebsterEndpoint().getPort(), getWebsterEndpoint().getProtocol());
 			}
 			else {
+				target = new HttpHost(getWebsterEndpoint().getDomain());
+			}
+			localContext = new BasicHttpContext();
+			localContext.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
+
+			HttpUriRequest method = new HttpGet(uri);			
+			HttpResponse response = client.execute(target, method, localContext);
+
+			if (response.getStatusLine().getStatusCode() == 200) {
+				/** Extract result. */
+				String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
+
+				ResultSet set = new ResultSet();
+
+				Matcher matcher = pattern.matcher(page);
+				if (matcher.find()) {
+					String result = matcher.group(1).replaceAll("\\<.*?\\>", "").replaceAll("\\s+", " ");
+
+					/** Create ResultSet*/
+					InformationObject io = new InformationObject();
+					io.hasUri = uriStr;
+					io.fromSource = "Webster";
+					io.hasTitle = "Webster definition of '" + word + "'.";
+					io.ofEntityType = "Definition";
+					io.ofMimeType = "text/html";
+					io.withRawText = result;
+					io.score = 20;		
+					set.informationobjects.add(io);
+				}
+
+
 				matcher = spellPattern.matcher(page);
 				if (matcher.find()) {
 					String result = matcher.group(1);
 					String[] elements = result.split("<li><a href=.*?>");
-					
+
 					for (String element : elements) {
 						if (element.trim().equals("") == false) {
-							set.suggestions.add(new Suggestion(element.replaceAll("<.*?>", "").trim()));
+							set.suggestions.add(new Suggestion(word, element.replaceAll("<.*?>", "").trim(), "Webster"));
 						}
 					}
 				}
-			}
-			exchange.getOut().setBody(set);
-		}
-		else {
-			HttpEntity entity = response.getEntity();
-			InputStream instream = entity.getContent();
-			String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
 
-			System.out.println(page);
+				if (exchange.getIn().getHeader(SolrOptions.stream) != null) {
+
+					for (InformationObject io : set.informationobjects) {
+						Exchange newExchange = new DefaultExchange(endpoint.getCamelContext());
+						newExchange.getIn().setBody(io);
+						endpoint.getCamelContext().createProducerTemplate().send((String) exchange.getIn().getHeader(SolrOptions.stream), newExchange);
+					}
+
+					for (Suggestion suggestion : set.suggestions) {
+						Exchange newExchange = new DefaultExchange(endpoint.getCamelContext());
+						newExchange.getIn().setBody(suggestion);
+						endpoint.getCamelContext().createProducerTemplate().send((String) exchange.getIn().getHeader(SolrOptions.stream), newExchange);
+					}
+				}
+				else {
+					exchange.getOut().setBody(set);
+				}
+			}
+			else {
+				HttpEntity entity = response.getEntity();
+				InputStream instream = entity.getContent();
+				String page = HttpClientConfigurer.readFully(response.getEntity().getContent());
+
+				System.out.println(page);
+			}
 		}
 	}
 
