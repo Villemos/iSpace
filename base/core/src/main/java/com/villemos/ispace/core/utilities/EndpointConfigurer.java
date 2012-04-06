@@ -35,6 +35,7 @@ public class EndpointConfigurer {
 				
 				String fieldName = headerEntryName.replaceAll(prefix, "");
 				try {
+					LOG.info("Dynamically setting field '" + fieldName + "'='" + entry.getValue().toString() + "' based on header.");
 					Field field = fields.get(fieldName);
 					field.setAccessible(true);
 					field.set(endpoint, entry.getValue());

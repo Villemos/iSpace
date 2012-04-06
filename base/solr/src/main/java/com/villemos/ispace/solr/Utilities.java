@@ -1,12 +1,9 @@
 package com.villemos.ispace.solr;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -15,22 +12,25 @@ import org.apache.solr.common.SolrDocument;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.thoughtworks.xstream.XStream;
 import com.villemos.ispace.api.Facet;
-import com.villemos.ispace.api.InformationObject;
 import com.villemos.ispace.api.ResultSet;
 
 public class Utilities {
 
 	private static final transient Logger LOG = LoggerFactory.getLogger(Utilities.class);
+
+	protected static XStream xstream = new XStream();
 	
-	public static synchronized ResultSet getResultSet(QueryResponse response, int rows, String query) {
+	public static synchronized ResultSet getResultSet(QueryResponse response, int rows, String query) throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException {
 
 		ResultSet set = new ResultSet();
 
 		for (SolrDocument document : response.getResults()) {
 
 			/** Use reflection to set the IO fields. */
-			InformationObject io = new InformationObject();
+			Object io = null;
+			io = Class.forName((String) document.get("ofClass"));
 
 			for (String field : document.getFieldNames()) {
 
@@ -39,65 +39,29 @@ public class Utilities {
 					continue;
 				}
 
-				/** If a dynamically (extension) field. */
-				else if (field.endsWith("_s") || field.endsWith("_t")) {
-					io.dynamic.put(field, document.getFieldValue(field));
+				/** Locate field. We do not use getField([name]) as it will throw an exception if
+				 * it doesnt find the field. */
+				Map<String, Field> fields = new HashMap<String, Field>();
+				Utilities.getAllFields(io.getClass(), fields);
+				Field ioField = fields.get(field);
+
+				Object value = document.get(field);
+				if (Utilities.isPrimitive(value)) {
+					ioField.set(io, value);
 				}
 				else {
-					try {
-						/** Locate field. We do not use getField([name]) as it will throw an exception if
-						 * it doesnt find the field. */
-						Field ioField = InformationObject.class.getField(field);
+					/** Everything else we encode with XStream. */
+					ioField.set(io, xstream.fromXML((String) value));
+				}
 
-						/** If a static defined field. */
-						if (ioField != null) {					
-
-							/** If this is a 'multivalued' field, insert as a list.  */ 
-							if (ioField.getType() == List.class) {
-								Method add = List.class.getDeclaredMethod("addAll",Collection.class);
-								add.invoke(ioField.get(io), document.getFieldValues(field));
-							}
-							/** Else set only the field.*/
-							else {
-								if (ioField.getType() == String.class) {
-									ioField.set(io, document.getFieldValue(field).toString());								
-								}
-								else if (ioField.getType() == long.class || ioField.getType() == Long.class) {
-									ioField.set(io, Long.toString((Long) document.getFieldValue(field)));
-								}
-								else if (ioField.getType() == float.class || ioField.getType() == Float.class) {
-									ioField.set(io, (Float) document.getFieldValue(field));
-								}
-								else if (ioField.getType() == int.class || ioField.getType() == Integer.class) {
-									ioField.set(io, Integer.toString((Integer) document.getFieldValue(field)));
-								}
-								else if (ioField.getType() == double.class || ioField.getType() == Double.class) {
-									ioField.set(io, Double.toString((Double) document.getFieldValue(field)));
-								}
-								else if (ioField.getType() == URL.class) {
-									ioField.set(io, new URL((String) document.getFieldValue(field)));
-								}
-								else if (ioField.getType() == Date.class) {
-									LOG.warn("Date type not supported.");
-								}
-								else {
-									LOG.warn("Failed to assign value '" + field + "' to IO object. Type '" + ioField.getType().getName() + "' not supported.");
-								}
-							}						
-						}
-					}
-					catch (Exception e) {
-						e.printStackTrace();
-					}
-
-					/** If this is the unique key, then we can use it to get the highlighting. */
-					if (field.equals("hasUri")) {
-						if (response.getHighlighting() != null && response.getHighlighting().get(field) != null) {
-							io.highlight = response.getHighlighting().get(field).get("withRawText");
-						}
+				/** If this is the unique key, then we can use it to get the highlighting. */
+				if (field.equals("hasUri")) {
+					if (response.getHighlighting() != null && response.getHighlighting().get(field) != null) {
+						set.highlights.put(io, response.getHighlighting().get(field).get("withRawText"));
 					}
 				}
 			}
+
 			set.informationobjects.add(io);
 		}
 
@@ -132,4 +96,25 @@ public class Utilities {
 		return set;
 	}
 
+	protected static Map<String, Field> getAllFields(Class clazz, Map<String, Field> fields) {
+		/** See if there is a super class. */
+		if (clazz.getSuperclass() != null) {
+			getAllFields(clazz.getSuperclass(), fields);
+		}
+
+		for (Field field : clazz.getDeclaredFields()) {
+			field.setAccessible(true);
+			fields.put(field.getName(), field);
+		}
+
+		return fields;
+	}
+
+	public static boolean isPrimitive(Object value) {
+		return value instanceof String || 
+		value instanceof Boolean ||
+		value instanceof Long ||
+		value instanceof Double ||
+		value.getClass().isPrimitive();
+	}
 }

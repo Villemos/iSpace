@@ -23,47 +23,6 @@
  */
 package com.villemos.ispace.api;
 
-public class Synonym extends InformationObject {
+public class Synonym {
 
-	public Synonym(String value, String category, String root, String extractedFrom) {
-		this.hasTitle = "Synonym: " + value;
-		this.hasUri = "ispace:synonym://" + category + "/"+ root + "/" + value;
-		this.ofMimeType = "ispace/virtual";
-		this.ofEntityType = "Synonym";
-		
-		dynamic.put("hasState", "candidate");
-		dynamic.put("withRawText", value);
-		dynamic.put("hasRootValue", root);
-		dynamic.put("ofCategory", category);
-		
-		this.withAttachedLog.add("Candidate synonym detected and extracted from source '" + extractedFrom + "'.");
-	}
-	
-	public boolean isAccepted() {
-		if (dynamic.containsKey("hasState")) {
-			return dynamic.get("hasState").equals("accepted");
-		}
-		
-		return false;
-	}
-	
-	public boolean isCandidate() {
-		if (dynamic.containsKey("hasState")) {
-			return dynamic.get("hasState").equals("candidate");
-		}
-		
-		return false;
-	}
-
-	public boolean isRemove() {
-		if (dynamic.containsKey("hasState")) {
-			return dynamic.get("hasState").equals("remove");
-		}
-		
-		return false;
-	}
-
-	public String getCategory() {
-		return (String) dynamic.get("ofCategory");
-	}
 }

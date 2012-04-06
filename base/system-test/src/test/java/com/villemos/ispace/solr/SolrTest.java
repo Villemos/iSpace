@@ -13,7 +13,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit38.AbstractJUnit38SpringContextTests;
 
-import com.villemos.ispace.api.InformationObject;
 import com.villemos.ispace.api.ResultSet;
 import com.villemos.ispace.api.SolrOptions;
 

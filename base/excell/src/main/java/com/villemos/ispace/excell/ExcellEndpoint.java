@@ -34,15 +34,20 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.ScheduledPollEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExcellEndpoint extends ScheduledPollEndpoint {
-	
+
+	private static final transient Logger LOG = LoggerFactory.getLogger(ExcellEndpoint.class);
+
+
 	protected IWorkbookFormatter workbookFormatter = null;
-	
+
 	/** If set to true, then the data read from the excell sheet will be streamed, i.e. each entry will
 	 * be send in a separate exchange. */
 	protected boolean stream = false;
-	
+
 	/** The name of the input file. May be dynamically changed by inserting the following
 	 * keywords;
 	 *   '${TIMESTAMP}'. Will be replaced with a timestamp in the format defined by filenameDateFormat.
@@ -54,8 +59,8 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	protected String filenameDateFormat = "yyyy-MM-dd-HH-mm-ss";
 
 	/** An ID that can be used to dynamically change the filename. */
-	protected String filenameId = null;
-	
+	protected String filenameId = "1";
+
 	/** Map of the sheet objects to be used for printing sheets. */
 	protected Map<String, ISheetFormatter> sheets = new HashMap<String, ISheetFormatter> ();
 
@@ -63,7 +68,7 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	protected String template = null;
 
 	protected ExcellFileConsumer consumer = new ExcellFileConsumer(this);
-	
+
 	/** Name of sheet to be used as generic Template if no template has been set above. */
 	protected Map<String, String> sheetTemplateNames = new HashMap<String, String>();
 	{
@@ -83,11 +88,11 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	/** The first row to be used to insert a row. If set to -1, then the first row is the first
 	 * free row. */
 	protected int startRow = -1;
-	
+
 	/** The last row to be processed. If -1, then all rows are processed. Else the row set
 	 * by this value is the last to be processed. */
 	protected int endRow = -1;
-	
+
 	/** Format to be used when dates are written / read in as strings. */
 	/** Date formatter: "09:04:00 2011" */
 	protected String dateFormat = "EEE MMM d HH:mm:ss z yyyy";
@@ -95,40 +100,40 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	/** The fully qualified name of the class to be created. Can be used if no column in the 
 	 * spreadsheet contains the class name. */
 	protected String className = null;
-	
+
 	/** The column holding the class definition. Default value is 0. If the className is set, then
 	 * this value is ignored. */
 	protected int classColumn = 0;
 
 	protected String defaultEncoding = "string";
-	
+
 	/** Defines whether data will be appended to the end of the excell spreadsheet or a new sheet created. */
 	protected boolean appendMode = false;
-	
+
 	protected boolean sendStatus = false;
 
 	public ExcellEndpoint() {
-    }
+	}
 
-    public ExcellEndpoint(String uri, ExcellComponent component) {
-        super(uri, component);
-    }
+	public ExcellEndpoint(String uri, ExcellComponent component) {
+		super(uri, component);
+	}
 
-    public ExcellEndpoint(String endpointUri) {
-        super(endpointUri);
-    }
+	public ExcellEndpoint(String endpointUri) {
+		super(endpointUri);
+	}
 
-    public Producer createProducer() throws Exception {
-        return new ExcellProducer(this);
-    }
+	public Producer createProducer() throws Exception {
+		return new ExcellProducer(this);
+	}
 
-    public Consumer createConsumer(Processor processor) throws Exception {
-        return new ExcellConsumer(this, processor);
-    }
+	public Consumer createConsumer(Processor processor) throws Exception {
+		return new ExcellConsumer(this, processor);
+	}
 
-    public boolean isSingleton() {
-        return true;
-    }
+	public boolean isSingleton() {
+		return true;
+	}
 
 	public boolean isStream() {
 		return stream;
@@ -147,7 +152,7 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 				workbookFormatter = new DefaultWorkbookFormatter();
 			}
 		}
-		
+
 		return workbookFormatter;
 	}
 
@@ -157,21 +162,38 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 
 	public String getFilename() {
 
+		String filename = this.filename;
+		
 		if (filename.contains("TIMESTAMP")) {
-			DateFormat df = new SimpleDateFormat(filenameDateFormat, Locale.UK);
-			filename = filename.replaceAll("TIMESTAMP", df.format(new Date()));
+			if (filenameDateFormat == null) {
+				LOG.error("The excell 'filename' option contains the keyword TIMESTAMP, but the option 'filenameDateFormat' has not been set.");
+			}
+			else {
+				try {
+					DateFormat df = new SimpleDateFormat(filenameDateFormat, Locale.UK);
+					filename = filename.replaceAll("TIMESTAMP", df.format(new Date()));
+				}
+				catch (Exception e) {
+					LOG.error("The option 'filenameDateFormat' has been set to an illegal value. Trying to format date resulted in a '" + e.toString() + "' exception.");
+				}
+			}
 		}
-		
+
 		if (filename.contains("FILENAMEID")) {
-			filename = filename.replaceAll("FILENAMEID", filenameId);
+			if (filenameDateFormat == null) {
+				LOG.error("The excell 'filename' option contains the keyword FILENAMEID, but the option 'filenameId' has not been set.");
+			}
+			else {			
+				filename = filename.replaceAll("FILENAMEID", filenameId);
+			}
 		}		
-		
+
 		return filename;
 	}
 
 	public void setFilename(String filename) {
 		this.filename = filename;
-		
+
 		if (this.filename.endsWith(".xls") == false) {
 			this.filename = this.filename + ".xls";
 		}
@@ -193,8 +215,8 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 		this.template = template;
 	}
 
-	
-	
+
+
 	public Map<String, String> getSheetTemplateNames() {
 		return sheetTemplateNames;
 	}
@@ -306,6 +328,6 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 	public void setFilenameDateFormat(String filenameDateFormat) {
 		this.filenameDateFormat = filenameDateFormat;
 	}
-	
-	
+
+
 }

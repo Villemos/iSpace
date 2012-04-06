@@ -156,7 +156,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 				newFile = new File(newFileName);
 				createWorkbook(newFile, exchange, endpoint);
 			}
-			else {
+			else {				
 				/** Notice that this is applicable to non template based as well as template based
 				 * workbooks. */
 				String renamedFileName = "temp_" + UUID.randomUUID().toString() + ".xls";
@@ -168,6 +168,8 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 				/** Open again. */
 				newFile = new File(newFileName);
 				renamedFile = new File(renamedFileName);
+				
+				LOG.info("Using existing workbook '" + newFile.getAbsolutePath() + "'.");
 				
 				/** Open workbook. */
 				Workbook workbookIn = Workbook.getWorkbook(renamedFile);
@@ -188,7 +190,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 			newFile.getParentFile().mkdirs();
 		}
 		workbook = Workbook.createWorkbook(newFile);
-		LOG.info("Creating spread sheet '" + newFile.getAbsolutePath() + "'.");		
+		LOG.info("Creating workbook '" + newFile.getAbsolutePath() + "'.");		
 	}
 	
 	

@@ -25,10 +25,9 @@ package com.villemos.ispace.core.search;
 
 
 import com.villemos.ispace.api.Facet;
-import com.villemos.ispace.api.InformationObject;
 
 public interface ICallback {
 
-	public void receive(InformationObject document);
+	public void receive(Object document);
 	public void receive(Facet document);
 }

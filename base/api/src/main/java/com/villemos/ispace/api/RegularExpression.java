@@ -3,7 +3,7 @@ package com.villemos.ispace.api;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RegularExpression extends InformationObject {
+public class RegularExpression {
 
 	public List<String> withGroup = new ArrayList<String>();
 	

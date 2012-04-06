@@ -25,7 +25,6 @@ package com.villemos.ispace.directoryassembler;
 
 import org.apache.camel.Endpoint;
 
-import com.villemos.ispace.httpcrawler.HttpCrawlerComponent;
 import com.villemos.ispace.ktree.KtreeCrawlerComponent;
 
 import java.util.Map;

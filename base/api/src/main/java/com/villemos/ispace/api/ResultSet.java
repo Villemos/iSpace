@@ -24,11 +24,13 @@
 package com.villemos.ispace.api;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ResultSet {
 
-	public List<InformationObject> informationobjects = new ArrayList<InformationObject>();
+	public List<Object> informationobjects = new ArrayList<Object>();
 	
 	public List<Suggestion> suggestions = new ArrayList<Suggestion>();
 	
@@ -36,7 +38,9 @@ public class ResultSet {
 	
 	public Statistics statistics = new Statistics();
 	
-	public List<InformationObject> getInformationObjects() {
+	public Map<Object, List<String>> highlights = new HashMap<Object, List<String>>();
+	
+	public List<Object> getInformationObjects() {
 		return informationobjects;
 	}
 }

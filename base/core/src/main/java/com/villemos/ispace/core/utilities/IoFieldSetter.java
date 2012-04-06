@@ -4,11 +4,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import com.villemos.ispace.api.InformationObject;
-
 public class IoFieldSetter {
 
-	public synchronized static void setField(InformationObject io, String fieldName, Object value) {
+	public synchronized static void setField(Object io, String fieldName, Object value) {
 		try {
 			/** If this class has such a field, set it. If not, then an exception
 			 * is thrown. */
@@ -24,7 +22,7 @@ public class IoFieldSetter {
 			/** The field does not exist. Set it as a dynamic field. Notice that the 
 			 * dynamic field is a MultiMap, i.e. multiple entries may have the same
 			 * key. */
-			io.dynamic.put(fieldName, value);
+
 		}
 	}
 }

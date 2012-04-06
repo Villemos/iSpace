@@ -69,6 +69,7 @@
 		<module>api</module>
 		<module>api-rmi</module>
 		<module>api-camel</module>
+		<module>ktree</module>
 <!--		<module>webgui</module>-->
 		<module>testclient</module>
 		<module>DirectoryAssembler</module>

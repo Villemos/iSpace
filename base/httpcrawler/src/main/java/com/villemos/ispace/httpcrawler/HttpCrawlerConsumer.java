@@ -75,8 +75,6 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 
-import com.villemos.ispace.api.InformationObject;
-
 
 public class HttpCrawlerConsumer extends ScheduledPollConsumer {
 

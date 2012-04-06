@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 
 import com.villemos.ispace.api.Facet;
-import com.villemos.ispace.api.InformationObject;
 import com.villemos.ispace.api.ResultSet;
 
 public class SolrConsumer extends ScheduledPollConsumer {
@@ -100,7 +99,7 @@ public class SolrConsumer extends ScheduledPollConsumer {
 		}
 		else {
 			/** Iterate through the result set and inject the io objects. */			
-			for (InformationObject io : results.informationobjects) {
+			for (Object io : results.informationobjects) {
 				Exchange exchange = getEndpoint().createExchange();
 				exchange.getIn().setBody(io);
 

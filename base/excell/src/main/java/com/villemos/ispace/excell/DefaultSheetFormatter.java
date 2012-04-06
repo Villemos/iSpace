@@ -200,7 +200,7 @@ public class DefaultSheetFormatter implements ISheetFormatter {
 			else {
 				String strValue = "";
 				if (endpoint.getDefaultEncoding().equals("string")) {
-					strValue = value.toString().replaceAll("&ndash;", "-");
+					strValue = value.toString().replaceAll("&ndash;", "-").replaceAll("–", "-");
 				}
 				else {
 					strValue = xstream.toXML(value);

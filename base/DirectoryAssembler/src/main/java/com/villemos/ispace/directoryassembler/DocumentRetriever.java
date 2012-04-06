@@ -5,11 +5,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +18,7 @@ import org.apache.camel.Exchange;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.message.BasicNameValuePair;
 
 import com.villemos.ispace.httpcrawler.HttpClientConfigurer;
 import com.villemos.ispace.httpcrawler.HttpCrawlerConsumer;
@@ -70,14 +63,25 @@ public class DocumentRetriever extends KtreeAccessor {
 		
 		/** Check whether files already exist. */
 		Map<String, List<Item>> documents = (Map<String, List<Item>>) exchange.getIn().getBody();
+		
+		long count = 0;
+		Iterator<Entry<String, List<Item>>> it1 = documents.entrySet().iterator();
+		while (it1.hasNext()) {
+			Entry<String, List<Item>> entry = it1.next();
 
+			if (entry.getKey().equals("Statistics")) {
+				continue;
+			}
+
+			count += entry.getValue().size();
+		}
+		
 		String rootFolder = ((DocumentAssemblerEndpoint)getEndpoint()).getRootFolder() + File.separator;
 
-		long test = 0;
-		
+		long downloaded = 0;
 		
 		Iterator<Entry<String, List<Item>>> it = documents.entrySet().iterator();
-		while (it.hasNext() && test < 10) {
+		while (it.hasNext()) {
 			Entry<String, List<Item>> entry = it.next();
 
 			if (entry.getKey().equals("Statistics")) {
@@ -90,22 +94,24 @@ public class DocumentRetriever extends KtreeAccessor {
 
 				/** Iterate through all items and see if they exist. */
 				for (Item doc : entry.getValue()) {
-					test++;
-					
 					File file = new File(rootFolder + entry.getKey() + File.separator + doc.filename);
 					if (file.exists() == false) {
+						LOG.info(downloaded + "/" + count + ". Retrieving document '" + doc.absoluteFilename + "'.");
 						getDocument(rootFolder + entry.getKey(), entry.getKey(), doc);
 					}
 					else {
 						/** See if the file haev changed, using the file size. */
 						if (file.length() != Long.parseLong(doc.filesize)) {
+							LOG.info(downloaded + "/" + count + ". Retrieving document '" + doc.absoluteFilename + "'.");
 							getDocument(rootFolder + entry.getKey(), entry.getKey(), doc);
 						}
 						else {
-							LOG.info("File '" + entry.getKey() + "/" + doc.filename + "' already exist. Has same size.");
+							LOG.info(downloaded + "/" + count + ". File '" + entry.getKey() + "/" + doc.filename + "' already exist. Has same size.");
 							doc.metadata.put("accessibleThrough", new URL("file:." + File.separator + entry.getKey() + File.separator + doc.filename));
 						}
 					}
+					
+					downloaded++;
 				}
 			}
 			else {
@@ -124,7 +130,6 @@ public class DocumentRetriever extends KtreeAccessor {
 	protected void getDocument(String downloadFolder, String parentFolder, Item doc) {
 
 		try {
-			LOG.info("Retrieveing document " + doc.absoluteFilename);
 			HttpGet get = new HttpGet("https://om.eo.esa.int/oem/kt/action.php?kt_path_info=ktcore.actions.document.view&fDocumentId=" + doc.id + "&session_id=" + session.results);
 			HttpResponse response = client.execute(get);
 
@@ -134,7 +139,7 @@ public class DocumentRetriever extends KtreeAccessor {
 			/** Write to the file. */
 			writeFile(response.getEntity().getContent(), newFile);
 
-			doc.metadata.put("accessibleThrough", "file:." + File.separator + parentFolder + File.separator + doc.filename);
+			doc.metadata.put("accessibleThrough", new URL("file:." + File.separator + parentFolder + File.separator + doc.filename));
 		}
 		catch (Exception e) {
 			e.printStackTrace();

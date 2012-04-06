@@ -23,16 +23,7 @@
  */
 package com.villemos.ispace.api;
 
-public class Taxonomy extends InformationObject {
-	
-	public Taxonomy(String parent, String child) {
-		this.hasUri = "ispace:taxonomy://" + parent + "/" + child;
-		this.ofMimeType = "ispace/virtual";
-		this.ofEntityType = "Taxonomy";
-		this.hasTitle = child + " taxonomy child of " + parent;
-		this.withRawText = child + " taxonomy child of " + parent;
-		
-		this.dynamic.put("chileEntry", child);
-		this.dynamic.put("parentEntry", parent);
-	}
+public class Taxonomy {
+	public String chileEntry;
+	public String parentEntry;
 }
