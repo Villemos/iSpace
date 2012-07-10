@@ -25,8 +25,10 @@ package com.villemos.ispace.excell;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -112,6 +114,8 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 
 	protected boolean sendStatus = false;
 
+	protected List<String> ignore = new ArrayList<String>();
+	
 	public ExcellEndpoint() {
 	}
 
@@ -327,6 +331,17 @@ public class ExcellEndpoint extends ScheduledPollEndpoint {
 
 	public void setFilenameDateFormat(String filenameDateFormat) {
 		this.filenameDateFormat = filenameDateFormat;
+	}
+
+	public List<String> getIgnore() {
+		return ignore;
+	}
+
+	public void setIgnore(String ignore) {
+		
+		for (String element : ignore.split(":")) {
+			this.ignore.add(element);
+		}
 	}
 
 

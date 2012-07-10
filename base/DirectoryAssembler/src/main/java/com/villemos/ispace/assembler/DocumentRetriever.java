@@ -1,4 +1,4 @@
-package com.villemos.ispace.directoryassembler;
+package com.villemos.ispace.assembler;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -15,11 +15,20 @@ import java.util.Map.Entry;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 
+import com.villemos.ispace.aperture.DocumentProcessor;
+import com.villemos.ispace.aperture.InformationObject;
+import com.villemos.ispace.aperture.enricher.MicrosoftPropertyReader;
+import com.villemos.ispace.assembler.helper.Buffer;
+import com.villemos.ispace.assembler.helper.LanguageDetector;
+import com.villemos.ispace.assembler.helper.ReferenceIdBodyEnricher;
 import com.villemos.ispace.httpcrawler.HttpClientConfigurer;
 import com.villemos.ispace.httpcrawler.HttpCrawlerConsumer;
 import com.villemos.ispace.ktree.KtreeAccessor;
@@ -41,8 +50,37 @@ public class DocumentRetriever extends KtreeAccessor {
 
 	protected Exchange exchange = null;
 
+	protected DirectoryAssemblerEndpoint endpoint = null;
+
+	protected ProducerTemplate fileparser = null;
+	
+	protected Buffer buffer = null;
+	
+	protected void initParser() {
+		RouteBuilder builder = new RouteBuilder() {
+		    public void configure() {
+		    	DocumentProcessor extractor = new DocumentProcessor(); 
+		    	MicrosoftPropertyReader property = new MicrosoftPropertyReader();
+		    	LanguageDetector languageDetector = new LanguageDetector();
+		    	ReferenceIdBodyEnricher bodyEnricher = new ReferenceIdBodyEnricher();
+		    	buffer = new Buffer();
+		    	
+		        from("direct:fileparser").split().method(extractor).bean(property).bean(languageDetector).bean(bodyEnricher).bean(buffer);		        
+		    }
+		};
+		
+		try {
+			getEndpoint().getCamelContext().addRoutes(builder);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		fileparser = builder.getContext().createProducerTemplate();
+	}
+	
 	public DocumentRetriever(Endpoint endpoint, HttpCrawlerConsumer consumer) {
 		super(endpoint, consumer);
+		this.endpoint = (DirectoryAssemblerEndpoint) endpoint;
 	}	
 
 	public void doPoll(Exchange exchange) throws Exception {
@@ -60,10 +98,10 @@ public class DocumentRetriever extends KtreeAccessor {
 
 		session = new Session();
 		xstream.fromXML(page, session);
-		
+
 		/** Check whether files already exist. */
 		Map<String, List<Item>> documents = (Map<String, List<Item>>) exchange.getIn().getBody();
-		
+
 		long count = 0;
 		Iterator<Entry<String, List<Item>>> it1 = documents.entrySet().iterator();
 		while (it1.hasNext()) {
@@ -75,11 +113,11 @@ public class DocumentRetriever extends KtreeAccessor {
 
 			count += entry.getValue().size();
 		}
-		
-		String rootFolder = ((DocumentAssemblerEndpoint)getEndpoint()).getRootFolder() + File.separator;
+
+		String rootFolder = ((DirectoryAssemblerEndpoint)getEndpoint()).getRootFolder() + File.separator;
 
 		long downloaded = 0;
-		
+
 		Iterator<Entry<String, List<Item>>> it = documents.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, List<Item>> entry = it.next();
@@ -87,20 +125,21 @@ public class DocumentRetriever extends KtreeAccessor {
 			if (entry.getKey().equals("Statistics")) {
 				continue;
 			}
-			
+
 			/** See if the root folder exist. */
 			File folder = new File(rootFolder + entry.getKey());
 			if (folder.exists()) {
 
 				/** Iterate through all items and see if they exist. */
 				for (Item doc : entry.getValue()) {
+
 					File file = new File(rootFolder + entry.getKey() + File.separator + doc.filename);
 					if (file.exists() == false) {
 						LOG.info(downloaded + "/" + count + ". Retrieving document '" + doc.absoluteFilename + "'.");
 						getDocument(rootFolder + entry.getKey(), entry.getKey(), doc);
 					}
 					else {
-						/** See if the file haev changed, using the file size. */
+						/** See if the file have changed, using the file size. */
 						if (file.length() != Long.parseLong(doc.filesize)) {
 							LOG.info(downloaded + "/" + count + ". Retrieving document '" + doc.absoluteFilename + "'.");
 							getDocument(rootFolder + entry.getKey(), entry.getKey(), doc);
@@ -108,6 +147,22 @@ public class DocumentRetriever extends KtreeAccessor {
 						else {
 							LOG.info(downloaded + "/" + count + ". File '" + entry.getKey() + "/" + doc.filename + "' already exist. Has same size.");
 							doc.metadata.put("accessibleThrough", new URL("file:." + File.separator + entry.getKey() + File.separator + doc.filename));
+						}
+					}
+
+					if (getAssemblerEndpoint().isParseBody()) {
+						
+						if (fileparser == null) {
+							initParser();
+						}
+						
+						Exchange exchange = new DefaultExchange(getEndpoint().getCamelContext());
+						exchange.getIn().setBody(file);
+						fileparser.send("direct:fileparser", exchange);
+						
+						if (buffer.io != null) {
+							doc.metadata.putAll(buffer.io.metadata);
+							buffer.clear();
 						}
 					}
 					
@@ -129,20 +184,23 @@ public class DocumentRetriever extends KtreeAccessor {
 
 	protected void getDocument(String downloadFolder, String parentFolder, Item doc) {
 
-		try {
-			HttpGet get = new HttpGet("https://om.eo.esa.int/oem/kt/action.php?kt_path_info=ktcore.actions.document.view&fDocumentId=" + doc.id + "&session_id=" + session.results);
-			HttpResponse response = client.execute(get);
+		if (getAssemblerEndpoint().isDownload()) {
 
-			/** Create the file. */
-			File newFile = new File(downloadFolder + File.separator + doc.filename);
+			try {
+				HttpGet get = new HttpGet("https://om.eo.esa.int/oem/kt/action.php?kt_path_info=ktcore.actions.document.view&fDocumentId=" + doc.id + "&session_id=" + session.results);
+				HttpResponse response = client.execute(get);
 
-			/** Write to the file. */
-			writeFile(response.getEntity().getContent(), newFile);
+				/** Create the file. */
+				File newFile = new File(downloadFolder + File.separator + doc.filename);
 
-			doc.metadata.put("accessibleThrough", new URL("file:." + File.separator + parentFolder + File.separator + doc.filename));
-		}
-		catch (Exception e) {
-			e.printStackTrace();
+				/** Write to the file. */
+				writeFile(response.getEntity().getContent(), newFile);
+
+				doc.metadata.put("accessibleThrough", new URL("file:." + File.separator + parentFolder + File.separator + doc.filename));			
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -176,5 +234,9 @@ public class DocumentRetriever extends KtreeAccessor {
 		}
 
 		return null;
+	}
+
+	protected DirectoryAssemblerEndpoint getAssemblerEndpoint() {
+		return endpoint;
 	}
 }

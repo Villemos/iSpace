@@ -1,0 +1,112 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.logica.oam</groupId>
+  <artifactId>oam-ktree</artifactId>
+  <version>0.10</version>
+  
+	<repositories>
+
+		<!-- Repository for the dependencies on other iSpace components. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>villemos</id>
+			<name>villemos</name>
+			<url>http://www.villemos.com:8080/artifactory/repo/</url>
+		</repository>
+
+		<!-- Repository dependency for standard dependencies. -->
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>mvnrepository</id>
+			<name>mvnrepository</name>
+			<url>http://mvnrepository.com/</url>
+		</repository>
+
+	</repositories>
+    
+  <dependencies>
+  
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>ktree</artifactId>
+		<version>0.1-SNAPSHOT</version>	  		
+  	</dependency>
+
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>excell</artifactId>
+		<version>0.1-SNAPSHOT</version>	  		
+  	</dependency>
+
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>aperture</artifactId>
+		<version>0.2-SNAPSHOT</version>	  		
+  	</dependency>
+
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>DirectoryAssembler</artifactId>
+		<version>0.2-SNAPSHOT</version>	  		
+  	</dependency>
+
+    <dependency>
+       <groupId>org.apache.camel</groupId>
+       <artifactId>camel-jetty</artifactId>
+       <version>2.8.1</version>
+    </dependency>
+
+<dependency>
+	<groupId>net.arnx</groupId>
+	<artifactId>jsonic</artifactId>
+	<version>1.2.7</version>
+</dependency>
+
+<dependency>
+	<groupId>com.cybozu.labs</groupId>
+	<artifactId>langdetect</artifactId>
+	<version>1.1-20120112</version>
+</dependency>
+            
+
+  	</dependencies>
+  	
+  	<build>
+      <plugins>    
+    
+		<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<addClasspath>true</addClasspath>
+							<mainClass>com.villemos.ispace.Starter</mainClass>
+							<classpathPrefix>lib/</classpathPrefix>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>    
+    
+                    <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>copy-dependencies</goal>
+                                    </goals>
+                                    <configuration>
+                                        <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                    </plugin>
+    </plugins>	
+  	</build>
+</project>

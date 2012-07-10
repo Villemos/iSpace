@@ -67,7 +67,6 @@ import org.semanticdesktop.aperture.subcrawler.SubCrawlerRegistry;
 import org.semanticdesktop.aperture.subcrawler.impl.DefaultSubCrawlerRegistry;
 
 import com.villemos.ispace.aperture.processor.IProcessor;
-import com.villemos.ispace.api.InformationObject;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -162,7 +161,7 @@ public class ExtendedCrawlerHandler implements CrawlerHandler, RDFContainerFacto
 			io.hasTitle = ((FileDataObject) object).getID().toString();
 			io.hasUri = ((FileDataObject) object).getID().toString();
 		}
-
+ 
 		io.ofMimeType = mimetype;
 		io.fromSource = "File System";
 		io.withRawText = fullText;
@@ -323,7 +322,12 @@ public class ExtendedCrawlerHandler implements CrawlerHandler, RDFContainerFacto
 			SubCrawlerFactory factory = (SubCrawlerFactory) subCrawlers.iterator().next();
 			SubCrawler subCrawler = factory.get();
 			System.out.print("|sc:" + subCrawler.getClass().getName());
+			try {
 			crawler.runSubCrawler(subCrawler, object, contentStream, null, mimeType);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 			return true;
 		}
 		else {

@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="	http://www.springframework.org/schema/beans 
+       						http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+       						http://www.springframework.org/schema/context
+           					http://www.springframework.org/schema/context/spring-context-2.5.xsd
+           					http://www.springframework.org/schema/util 
+           					http://www.springframework.org/schema/util/spring-util-2.5.xsd 
+   						    http://camel.apache.org/schema/spring 		
+ 						    http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+	<context:annotation-config/>
+
+	<bean id="release.filter" class="com.logica.oam.ktree.filter.ReleaseFilter"/>
+
+	<bean id="application.splitter" class="com.logica.oam.ktree.transformer.OldApplicationSplitter"/>
+
+	<bean id="new.application.splitter" class="com.logica.oam.ktree.transformer.NewApplicationSplitter"/>
+
+	<bean id="statistics.collector" class="com.logica.oam.ktree.statistics.StatisticsCollector"/>
+
+	<bean id="releaseid.detector" class="com.logica.oam.ktree.enricher.ReleaseIdEnricher"/>
+	
+	<bean id="setaccessurl" class="com.logica.oam.ktree.enricher.AccessUrlEnricher"/>
+
+	<bean id="setfolderurl" class="com.logica.oam.ktree.enricher.SetFolderUrl"/>
+
+	<bean id="duplicate.merger" class="com.logica.oam.ktree.transformer.DuplicateMerger"/>
+	
+	<bean id="duplicate.simplifier" class="com.logica.oam.ktree.transformer.DuplicateSimplifier"/>
+
+	<bean id="validate" class="com.logica.oam.ktree.RequestChecker"/>
+
+	<bean id="date.filter" class="com.logica.oam.ktree.filter.DateFilter"/>
+	
+	<bean id="filename.filter" class="com.logica.oam.ktree.filter.ElementFilter"/>
+	
+	<bean id="domain.detector" class="com.logica.oam.ktree.enricher.DomainDetector"/>
+		
+	<bean id="version1.enricher" class="com.logica.oam.ktree.enricher.VersionEnricher">
+		<property name="pattern" value="_v(\d)(\d)(_|\.)"/>
+		<property name="groups">
+			<list>
+				<value>1</value>
+				<value>2</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="version2.enricher" class="com.logica.oam.ktree.enricher.VersionEnricher">
+		<property name="pattern" value="(\s+|_|-|\[)(v|V)(\s*|_)(\d(\.|_|-|\s)(\d{1,2})(\.\d{1,2})*)"/>
+		<property name="groups">
+			<list>
+				<value>4</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="version3.enricher" class="com.logica.oam.ktree.enricher.VersionEnricher">
+		<property name="pattern" value="-(\d_\w\.)"/>
+		<property name="groups">
+			<list>
+				<value>1</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="version4.enricher" class="com.logica.oam.ktree.enricher.VersionEnricher">
+	<property name="pattern" value="\[(\d_\d)\]"/>
+		<property name="groups">
+			<list>
+				<value>4</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="version5.enricher" class="com.logica.oam.ktree.enricher.VersionEnricher">
+		<property name="pattern" value="(_|-)(\d\.\d\.\d)\."/>
+		<property name="groups">
+			<list>
+				<value>2</value>
+			</list>
+		</property>
+	</bean>
+		
+	<bean id="referenceid1.enricher" class="com.logica.oam.ktree.enricher.ReferenceIdEnricher"/>
+		
+<!--	<bean id="version.consolidator" class="com.logica.oam.ktree.VersionConsolidator"/>-->
+	
+<!--	<bean id="referenceid.consolidator" class="com.logica.oam.ktree.ReferenceIdConsolidator"/>-->
+		
+	<bean id="referenceid2.enricher" class="com.logica.oam.ktree.enricher.ReferenceIdEnricher">
+		<property name="pattern" value="^(\p{Alpha}\p{Alnum}{1,}-\p{Alpha}{2,}-\p{Alpha}{2,}-\d{2,}(-\d{2,})*)"/>
+	</bean>
+		
+<!--	<bean id="application.detector" class="com.logica.oam.ktree.ApplicationDetector"/>-->
+
+	<!-- The iSpace Aperture based splitter of text from documents. -->
+<!--	<bean id="extractor" class="com.villemos.ispace.aperture.DocumentProcessor"/>-->
+		
+<!--	<bean id="property.fields" class="com.villemos.ispace.aperture.enricher.MicrosoftPropertyReader"/>-->
+		
+<!--	<bean id="extractorHelper" class="com.logica.oam.ktree.ExtractorHelper"/>-->
+		
+<!--	<bean id="converter" class="com.logica.oam.ktree.statistics.Converter"/>-->
+		
+<!--	<bean id="aggregator" class="com.logica.oam.ktree.statistics.IoAggregationStrategy"/>-->
+		
+	<bean id="extraction.statistics" class="com.logica.oam.ktree.statistics.ExtractorStatistics"/>		
+	
+<!--	<bean id="filter" class="com.logica.oam.ktree.statistics.Filter"/>		-->
+		
+<!--	<bean id="merger" class="com.logica.oam.ktree.statistics.ItemIoMerger"/>-->
+	
+	<bean id="selector" class="com.logica.oam.ktree.transformer.ReferenceIdSelector"/>
+	
+	<camelContext id="context" xmlns="http://camel.apache.org/schema/spring">
+		<template id="producer"/>
+		
+		<route>
+			<from uri="jetty:http://localhost:4242/request/crawl"/>
+			<to uri="bean:validate"/>
+			<choice>
+				<when>
+					<simple>${header.isValid} == true and ${header.operation} == 'Generate Documentation Baseline Snapshot'</simple>
+					<wireTap uri="direct:snapshotCrawl"/>
+					<transform>
+ 		    			<simple>Crawl Started. It may take a while; use the console window to check progress.</simple>
+  		 			</transform>
+  		 		</when>
+				<when>
+					<simple>${header.isValid} == true and ${header.operation} == 'Re-Generate Documentation Baseline Snapshot'</simple>
+					<wireTap uri="direct:snapshotCache"/>
+					<transform>
+ 		    			<simple>Crawl Started. It may take a while; use the console window to check progress.</simple>
+  		 			</transform>
+  		 		</when>
+				<when>
+					<simple>${header.isValid} == true and ${header.operation} == 'Generate Documentation Register'</simple>
+					<wireTap uri="direct:registerCrawl"/>
+					<transform>
+ 		    			<simple>Crawl Started. It may take a while; use the console window to check progress.</simple>
+  		 			</transform>
+  		 		</when>
+				<when>
+					<simple>${header.isValid} == true and ${header.operation} == 'Re-Generate Documentation Register'</simple>
+					<wireTap uri="direct:registerCache"/>
+					<transform>
+ 		    			<simple>Crawl Started. It may take a while; use the console window to check progress.</simple>
+  		 			</transform>
+  		 		</when>  		 		
+  		 	</choice>
+     	</route>
+
+		<route id="snapshotCrawl">
+			<from uri="timer:starter?period=0"/>
+<!--			<to uri="ktree:ktree?url=https://om.eo.esa.int/oem/kt&amp;port=443&amp;initialFolders=6083&amp;user=USER&amp;password=PASSWORD&amp;maxNumberOfDocuments=20&amp;folders=false"/>-->
+<!--			<to uri="ktree:ktree?url=https://om.eo.esa.int/oem/kt&amp;port=443&amp;initialFolders=107:12229&amp;user=USER&amp;password=PASSWORD&amp;folders=false"/>-->
+			<to uri="excell:exporter?filename=./snapshot/OAM Documentation Baseline Snapshot - unformatted.xls&amp;defaultEncoding=xstream"/>
+			<to uri="direct:newSnapshotPipe"/>
+		</route>
+		
+		<route id="snapshotCache">			
+			<from uri="direct:snapshotCache"/>
+			<to uri="excell:exporter?filename=C:/oamTestArea/snapshot/OAM Documentation Baseline Snapshot - unformatted.xls&amp;defaultEncoding=xstream"/>
+			<to uri="direct:snapshotPipe"/>
+		</route>
+
+		<!-- Old Snapshot -->		
+		<route id="oldSnapshotPipe">
+			<from uri="direct:oldSnapshotPipe"/>
+			
+			<!-- FILTER. Removes documents from the 'documents'. -->
+			<to uri="bean:filename.filter"/>      <!-- Removes unwanted documents -->
+			<to uri="bean:duplicate.merger"/>     <!-- Detect all files with the same title and size. Keeps only one. -->
+
+			<!-- ENRICHER. Adds metadata based on rules. -->
+			<to uri="bean:releaseid.detector"/>   <!-- Adds the release ID to the metadata of each document based on path -->
+			<to uri="bean:setaccessurl"/>         <!-- Adds the documents Ktree URL to the metadata of each document -->
+			<to uri="bean:version1.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version2.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version3.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version4.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version5.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:referenceid1.enricher"/><!-- Adds the Reference ID to the metadata of each document based on pattern in title -->
+			<to uri="bean:referenceid2.enricher"/><!-- Adds the Reference ID to the metadata of each document based on pattern in title -->
+						
+			<!-- FILTER. Removes more documents from the 'documents' -->
+			<to uri="bean:release.filter"/>		  <!-- Remove all documents except the last version. -->
+
+			<!-- TRANSFORMER. Changes the layout of the Map. -->
+			<to uri="bean:application.splitter"/> <!-- Assign documents to applications. Map goes from single 'document' entry to an entry per application. -->
+
+			<to uri="bean:statistics.collector"/> <!-- Collect statistics on the documents. Create a 'Statistics' entry in the Map. -->
+			<to uri="assembler:assembler?url=https://om.eo.esa.int/oem/kt&amp;port=443&amp;rootFolder=C:/oamTestArea/oldsnapshot&amp;user=USER&amp;password=PASSWORD&amp;download=true"/>
+
+			<!-- Adds Map entry "statistics":List of Statistic -->
+		    <to uri="bean:extraction.statistics"/>		            
+			<to uri="bean:selector"/>
+
+			<!-- LOADER. Stores the data. -->
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Baseline Snapshot - Template - v12.xls&amp;filename=./snapshot/OAM Documentation Baseline Snapshot (FULL).xls&amp;ignore=folders:applications"/>
+			
+			<!-- TRANSFORMER. Changes the entries in the Map. -->
+			<to uri="bean:duplicate.simplifier"/>
+
+			<!-- LOADER. Stores the changed data. -->
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Baseline Snapshot - Template - v12.xls&amp;filename=./snapshot/OAM Documentation Baseline Snapshot.xls&amp;ignore=folders:applications"/>
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Baseline Snapshot Detail - Template - v10.xls&amp;filename=./snapshot/OAM Documentation Baseline Snapshot (Detail).xls&amp;ignore=folders:applications"/>
+		</route>
+
+
+
+		<!-- New Snapshot -->		
+		<route id="newSnapshotPipe">
+			<from uri="direct:newSnapshotPipe"/>
+			
+			<!-- FILTER. Removes documents from the 'documents'. -->
+			<to uri="bean:filename.filter"/>      <!-- Removes unwanted documents -->
+			<!-- to uri="bean:duplicate.merger"/ -->     <!-- Detect all files with the same title and size. Keeps only one. -->
+
+			<!-- ENRICHER. Adds metadata based on rules. -->
+			<to uri="bean:releaseid.detector"/>   <!-- Adds the release ID to the metadata of each document based on path -->
+			<to uri="bean:setaccessurl"/>         <!-- Adds the documents Ktree URL to the metadata of each document -->
+			<to uri="bean:version1.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version2.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version3.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version4.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:version5.enricher"/>    <!-- Adds the Version to the metadata of each document based on pattern in title -->
+			<to uri="bean:referenceid1.enricher"/><!-- Adds the Reference ID to the metadata of each document based on pattern in title -->
+			<to uri="bean:referenceid2.enricher"/><!-- Adds the Reference ID to the metadata of each document based on pattern in title -->
+						
+			<!-- FILTER. Removes more documents from the 'documents' -->
+			<!-- to uri="bean:release.filter"/ -->		  <!-- Remove all documents except the last version. -->
+
+			<!-- TRANSFORMER. Changes the layout of the Map. -->
+			<to uri="bean:new.application.splitter"/> <!-- Assign documents to applications. Map goes from single 'document' entry to an entry per application. -->
+
+			<to uri="bean:statistics.collector"/> <!-- Collect statistics on the documents. Create a 'Statistics' entry in the Map. -->
+			<to uri="assembler:assembler?url=https://om.eo.esa.int/oem/kt&amp;port=443&amp;rootFolder=C:/oamTestArea/newsnapshot&amp;user=USER&amp;password=PASSWORD&amp;download=true"/>
+
+			<!-- Adds Map entry "statistics":List of Statistic -->
+		    <to uri="bean:extraction.statistics"/>		            
+			<to uri="bean:selector"/>
+
+			<!-- LOADER. Stores the data. -->
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Baseline Snapshot - Template - v12.xls&amp;filename=./snapshot/NEW OAM Documentation Baseline Snapshot (FULL).xls&amp;ignore=folders:applications"/>
+			
+			<!-- TRANSFORMER. Changes the entries in the Map. -->
+			<!-- to uri="bean:duplicate.simplifier"/ -->
+
+			<!-- LOADER. Stores the changed data. -->
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Baseline Snapshot - Template - v12.xls&amp;filename=./snapshot/NEW OAM Documentation Baseline Snapshot.xls&amp;ignore=folders:applications"/>
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Baseline Snapshot Detail - Template - v10.xls&amp;filename=./snapshot/NEW OAM Documentation Baseline Snapshot (Detail).xls&amp;ignore=folders:applications"/>
+		</route>
+
+
+
+		<route id="registerCrawl">
+			<from uri="direct:registerCrawl"/>
+			<to uri="ktree:ktree?url=https://om.eo.esa.int/oem/kt&amp;port=443&amp;initialFolders=1&amp;ignorePattern=(/DroppedDocuments|/OSD/Change Proposals|/OSD/MOMs/J-CCB|(.*?)/Archive|/UNITs)"/>
+			<to uri="excell:exporter?filename=./register/OAM Documentation Register - unformatted.xls&amp;defaultEncoding=xstream"/>
+			<to uri="direct:registerPipe"/>
+		</route>
+		
+		<route id="registerCache">
+			<from uri="direct:registerCache"/>
+			<to uri="excell:exporter?filename=./register/OAM Documentation Register - unformatted.xls&amp;defaultEncoding=xstream"/>
+			<to uri="direct:registerPipe"/>
+		</route>		
+		
+		<route id="registerPipe">
+			<from uri="direct:registerPipe"/>			
+			<to uri="bean:domain.detector"/>
+			<to uri="bean:releaseid.detector"/>
+			<to uri="bean:setaccessurl"/>
+			<to uri="bean:setfolderurl"/>
+			<to uri="bean:date.filter"/>
+			<to uri="excell:exporter?startRow=1&amp;template=OAM Documentation Register - Template - v10.xls&amp;filename=./register/OAM Documentation Register.xls"/>
+		</route>
+
+	</camelContext>
+	
+</beans>

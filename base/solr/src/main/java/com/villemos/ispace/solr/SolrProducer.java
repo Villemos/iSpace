@@ -29,6 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -186,7 +187,22 @@ public class SolrProducer extends DefaultProducer {
 				document.addField(entry.getKey(), value + "_s");
 			}
 			else {
-				/** Dont encode. */
+				/** If this is the metadata field. */
+				if (entry.getKey().equals("metadata")) {
+				
+					Map<String, Object> metadata = (Map<String, Object>) value;
+				
+					Iterator<Entry<String, Object>> it2 = metadata.entrySet().iterator();
+					while (it2.hasNext()) {
+						Entry<String, Object> entry2 = it2.next();
+						
+						
+					}
+					
+				}
+				else {				
+					/** Dont encode. */
+				}
 			}
 		}
 

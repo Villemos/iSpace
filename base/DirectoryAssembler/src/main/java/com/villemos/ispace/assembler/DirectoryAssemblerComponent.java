@@ -21,7 +21,7 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.directoryassembler;
+package com.villemos.ispace.assembler;
 
 import org.apache.camel.Endpoint;
 
@@ -30,15 +30,15 @@ import com.villemos.ispace.ktree.KtreeCrawlerComponent;
 import java.util.Map;
 
 /**
- * Represents the component that manages {@link DocumentAssemblerEndpoint}. It holds the
+ * Represents the component that manages {@link DirectoryAssemblerEndpoint}. It holds the
  * list of named direct endpoints.
  *
  * @version
  */
-public class DocumentAssemblerComponent extends KtreeCrawlerComponent {
+public class DirectoryAssemblerComponent extends KtreeCrawlerComponent {
 
     protected Endpoint createEndpoint(String uri, String remaining, Map parameters) throws Exception {
-        Endpoint endpoint = new DocumentAssemblerEndpoint(uri, this);
+        Endpoint endpoint = new DirectoryAssemblerEndpoint(uri, this);
         setProperties(endpoint, parameters);
         return endpoint;
     }

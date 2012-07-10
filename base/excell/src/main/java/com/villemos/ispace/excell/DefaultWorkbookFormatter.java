@@ -28,6 +28,7 @@ package com.villemos.ispace.excell;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -54,13 +55,15 @@ import com.villemos.ispace.api.ResultSet;
 public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 
 	private static final transient Logger LOG = LoggerFactory.getLogger(DefaultWorkbookFormatter.class);
-	
+
 	protected WritableWorkbook workbook = null;
 
 	protected ISheetFormatter sheetFormatter = null;
 
 	protected WritableSheet sheet = null;
-	
+
+	protected List<String> ignore = new ArrayList<String>();
+
 	@Override
 	public synchronized void add(Exchange exchange, ExcellEndpoint endpoint) {
 		Object object = exchange.getIn().getBody();
@@ -83,10 +86,14 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 			else if (object instanceof Map) {
 				Iterator<Entry<String, List>> it = ((Map<String, List>) object).entrySet().iterator();
 				while (it.hasNext()) {
+
 					Entry<String, List> entry = it.next();
-					sheet = null;
-					sheetFormatter = null;
-					insertData(entry.getKey(), workbook, entry.getValue(), endpoint);
+
+					if (endpoint.getIgnore().contains(entry.getKey()) == false) {
+						sheet = null;
+						sheetFormatter = null;
+						insertData(entry.getKey(), workbook, entry.getValue(), endpoint);
+					}
 				}
 			}
 			else {
@@ -114,10 +121,10 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 			createSheetFormatter(endpoint);
 		}
 
-//		/** see if the sheet already exist. */
-//		if (sheet == null) {
-//			sheet = workbook.getSheet(sheetName);
-//		}
+		//		/** see if the sheet already exist. */
+		//		if (sheet == null) {
+		//			sheet = workbook.getSheet(sheetName);
+		//		}
 		/** If it doesnt exist, then...*/
 		if (sheet == null) {
 			createSheet(sheetName, workbook, endpoint);
@@ -125,7 +132,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 
 		/** Write the data to the sheet, using the formatter. */
 		sheetFormatter.add(objects, sheet, endpoint);
-		
+
 		/** Delete the template sheet from the workbook. */
 		/** TODO */
 	}
@@ -133,15 +140,15 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 	protected void createSheetFormatter(ExcellEndpoint endpoint) {
 		sheetFormatter = new DefaultSheetFormatter();
 	}
-	
+
 	protected void createSheet(String sheetName, WritableWorkbook workbook, ExcellEndpoint endpoint) throws RowsExceededException, WriteException {
-		 sheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
+		sheet = workbook.createSheet(sheetName, workbook.getNumberOfSheets());
 	}
 
 	protected void openWorkbook(Exchange exchange, ExcellEndpoint endpoint) throws BiffException, IOException {
 		String newFileName = buildFileName(exchange, endpoint);
 		File newFile = new File(newFileName);
-		
+
 		if (newFile.exists() == false) {
 			createWorkbook(newFile, exchange, endpoint);
 		}
@@ -152,7 +159,7 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 				if (newFile.delete() == false) {
 					LOG.error("Failed to delete existing file '" + newFile.getAbsolutePath() + "'.");
 				}
-				
+
 				newFile = new File(newFileName);
 				createWorkbook(newFile, exchange, endpoint);
 			}
@@ -161,22 +168,22 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 				 * workbooks. */
 				String renamedFileName = "temp_" + UUID.randomUUID().toString() + ".xls";
 				File renamedFile = new File(renamedFileName); 
-				
+
 				/** Move existing workbook.*/
 				newFile.renameTo(renamedFile);
-				
+
 				/** Open again. */
 				newFile = new File(newFileName);
 				renamedFile = new File(renamedFileName);
-				
+
 				LOG.info("Using existing workbook '" + newFile.getAbsolutePath() + "'.");
-				
+
 				/** Open workbook. */
 				Workbook workbookIn = Workbook.getWorkbook(renamedFile);
-				
+
 				/** Copy it to the new workbook. */
 				workbook = Workbook.createWorkbook(newFile, workbookIn);
-				
+
 				/** Delete old. */
 				workbookIn.close();
 				renamedFile.delete();
@@ -192,23 +199,23 @@ public class DefaultWorkbookFormatter implements IWorkbookFormatter {
 		workbook = Workbook.createWorkbook(newFile);
 		LOG.info("Creating workbook '" + newFile.getAbsolutePath() + "'.");		
 	}
-	
-	
+
+
 	protected String buildFileName(Exchange exchange, ExcellEndpoint endpoint) {
 		String newFileName = endpoint.getFilename();
-		
+
 		/** If the name has not been configured, then use the timestamp format to create a name. */
 		if (newFileName == null) {
 			SimpleDateFormat formatter = new SimpleDateFormat(endpoint.getFilenameDateFormat());
 			newFileName = formatter.format(new Date()); 
 		}
-		
+
 		return newFileName;
 	}
-	
+
 	protected synchronized void flushWorkbook() throws IOException, WriteException {
 		if (workbook != null) {
-			
+
 			/** Write and flush the workbook. */
 			workbook.write();
 			workbook.close();

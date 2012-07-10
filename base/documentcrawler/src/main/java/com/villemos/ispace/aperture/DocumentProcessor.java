@@ -45,9 +45,13 @@ public class DocumentProcessor {
 	
 	@Handler
 	public synchronized List<Message> processDocument(@Body File file) {
-		
+	
 		/** Make sure we have no messages left from previous run. */
 		messages.clear();
+
+		if (file.getName().startsWith("~")) {
+			return messages;
+		}
 		
 		RDFContainerFactoryImpl rdfFactory = new RDFContainerFactoryImpl();
 		RDFContainer configuration = rdfFactory.newInstance("source:testsource");
@@ -59,10 +63,16 @@ public class DocumentProcessor {
 		
 		/** create a Crawler */
 		final FileSystemCrawler crawler = new FileSystemCrawler();
+		//final FileSystemCrawler crawler = new ExtendedFileSystemCrawler();
 		crawler.setDataSource(source);		
 		crawler.setCrawlerHandler(handler);
 		crawler.setDataAccessorRegistry(new DefaultDataAccessorRegistry());
 		crawler.crawl();
+		
+		crawler.getCrawlReport();
+		
+		/** Required to get rid of 'org.openrdf.rdf2go.RepositoryModel not closed, closing now' warnings. */
+		source.getConfiguration().dispose();
 		
 		/** Return the messages. The route must contain a splitter to process
 		 * each document. */

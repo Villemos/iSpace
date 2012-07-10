@@ -21,7 +21,7 @@
  * And it wouldn't be nice either.
  * 
  */
-package com.villemos.ispace.directoryassembler;
+package com.villemos.ispace.assembler;
 
 import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
@@ -37,18 +37,23 @@ import com.villemos.ispace.ktree.KtreeCrawlerEndpoint;
  * 
  * @version 
  */
-public class DocumentAssemblerEndpoint extends KtreeCrawlerEndpoint {
+public class DirectoryAssemblerEndpoint extends KtreeCrawlerEndpoint {
 
-	private static final Log LOG = LogFactory.getLog(DocumentAssemblerEndpoint.class);
+	private static final Log LOG = LogFactory.getLog(DirectoryAssemblerEndpoint.class);
 
 	protected String rootFolder = "/";
 	
-	public DocumentAssemblerEndpoint(String uri, DocumentAssemblerComponent component) {
+	/** Flag defining whether the component should download documents. */
+	protected boolean download = true;
+	
+	protected boolean parseBody = true;
+	
+	public DirectoryAssemblerEndpoint(String uri, DirectoryAssemblerComponent component) {
 		super(uri, component);
 	}
 
 	public Producer createProducer() throws Exception {
-		return new DocumentAssemblerProducer(this);
+		return new DirectoryAssemblerProducer(this);
 	}
 
 	public Consumer createConsumer(Processor processor) throws Exception {
@@ -62,4 +67,22 @@ public class DocumentAssemblerEndpoint extends KtreeCrawlerEndpoint {
 	public void setRootFolder(String rootFolder) {
 		this.rootFolder = rootFolder;
 	}
+
+	public boolean isDownload() {
+		return download;
+	}
+
+	public void setDownload(boolean download) {
+		this.download = download;
+	}
+
+	public boolean isParseBody() {
+		return parseBody;
+	}
+
+	public void setParseBody(boolean parseBody) {
+		this.parseBody = parseBody;
+	}
+	
+	
 }

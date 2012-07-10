@@ -33,12 +33,11 @@ import org.apache.camel.Body;
 import org.apache.camel.Handler;
 import org.apache.camel.Headers;
 
-import com.villemos.ispace.api.InformationObject;
 import com.villemos.ispace.core.utilities.IoFieldSetter;
 
 public class PatternBasedEnricher extends RegularExpressionBuffer{
 
-	protected String headerFieldName;
+	protected String fieldName;
 
 	protected String pattern;
 

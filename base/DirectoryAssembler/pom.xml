@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.villemos.ispace</groupId>
   <artifactId>DirectoryAssembler</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.2-SNAPSHOT</version>
   
 	<parent>
 		<artifactId>base</artifactId>
@@ -51,6 +51,18 @@
 		<artifactId>ktree</artifactId>
 		<version>0.1-SNAPSHOT</version>	  		
   	</dependency>
+
+  	<dependency>
+		<groupId>com.villemos.ispace</groupId>
+		<artifactId>aperture</artifactId>
+		<version>0.2-SNAPSHOT</version>	  		
+  	</dependency>
+
+	<dependency>
+		<groupId>com.cybozu.labs</groupId>
+		<artifactId>langdetect</artifactId>
+		<version>1.1-20120112</version>
+	</dependency>
 
   </dependencies>
   

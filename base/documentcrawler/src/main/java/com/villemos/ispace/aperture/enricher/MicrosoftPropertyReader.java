@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,31 +47,36 @@ import org.apache.poi.hpsf.Section;
 import org.apache.poi.poifs.eventfilesystem.POIFSReaderListener;
 import org.apache.poi.util.HexDump;
 
+import com.villemos.ispace.aperture.InformationObject;
+
 public class MicrosoftPropertyReader implements POIFSReaderListener {
 
-	private static org.apache.log4j.Logger Logger = org.apache.log4j.Logger.getLogger(MicrosoftPropertyReader.class);
+	private static org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(MicrosoftPropertyReader.class);
 
 	public Map<String, String> msProperties = new HashMap<String, String>();;
 
 	@Handler
-	public void addMSProperties(@Body File file, @Headers Map<String, Object> headers) {
-		POIFSReader r = new POIFSReader();				
-		r.registerListener(this);
-		try {
-			FileInputStream inStream = new FileInputStream(file);
-			r.read(inStream);
-			
-			List<Object> values = new ArrayList<Object>();
-			Iterator<Entry<String, String>> it = msProperties.entrySet().iterator();
-			while (it.hasNext()) {
-				values.add(it.next().getValue());
-			}			
-			headers.put("ispace.field.", values);
-			inStream.close();			
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+	public void addMSProperties(@Body InformationObject io, @Headers Map<String, Object> headers) {
+
+		File file = new File(io.hasUri);
+
+		if (file.exists() && io.hasUri.endsWith(".doc")) {
+			POIFSReader r = new POIFSReader();				
+			r.registerListener(this);
+			try {
+				FileInputStream inStream = new FileInputStream(file);
+				r.read(inStream);
+
+				Iterator<Entry<String, String>> it = msProperties.entrySet().iterator();
+				while (it.hasNext()) {
+					Entry<String, String> entry = it.next();
+					io.metadata.put(entry.getKey(), entry.getValue());
+				}			
+				inStream.close();			
+			} catch (Exception e) {
+				e.printStackTrace();
+				LOG.error("Failed to get properties for .doc file '" + file.getName() + "'.");
+			}
 		}
 	}
 
@@ -82,15 +86,15 @@ public class MicrosoftPropertyReader implements POIFSReaderListener {
 			ps = PropertySetFactory.create(event.getStream());
 		}
 		catch (NoPropertySetStreamException ex) {
-			Logger.debug("No property set stream: \"" + event.getPath() + event.getName() + "\"");
+			LOG.debug("No property set stream: \"" + event.getPath() + event.getName() + "\"");
 			return;
 		}
 		catch (Exception ex) {
-			Logger.error("Exception while processing microsoft property set " + ex);
+			LOG.error("Exception while processing microsoft property set " + ex);
 		}
 
 		/* Print the name of the property set stream: */
-		Logger.debug("Property set stream \"" + event.getPath() + event.getName() + "\":");
+		LOG.debug("Property set stream \"" + event.getPath() + event.getName() + "\":");
 
 		/* Print the list of sections: */
 		List<Section> sections = ps.getSections();
