@@ -25,16 +25,18 @@ package com.villemos.ispace.ktree;
 
 import java.util.Map;
 
-import org.apache.camel.AsyncCallback;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
-import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultProducer;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.villemos.ispace.core.utilities.EndpointConfigurer;
 
 public class KtreeCrawlerProducer extends DefaultProducer {
+
+	private static final Log LOG = LogFactory.getLog(KtreeCrawlerProducer.class);
 
 	protected KtreeAccessor crawler = null;
 
@@ -56,9 +58,11 @@ public class KtreeCrawlerProducer extends DefaultProducer {
 		Object body = exchange.getIn().getBody(); 
 		if (body != null && body instanceof Map) {
 			/** Get the results. The results is inserted as a Map into a Camel Message. */
+			LOG.debug("Adding results to existing IN body.");
 			((Map)exchange.getIn().getBody()).putAll(crawler.getResults());
 		}
-		else {		
+		else {
+			LOG.debug("Replacing IN body with the results.");
 			exchange.getIn().setBody(crawler.getResults());
 		}		
 	}

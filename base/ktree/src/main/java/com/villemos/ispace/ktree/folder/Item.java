@@ -66,6 +66,9 @@ public class Item {
 	/** Metadata fields. */
 	public Map<String, Object> metadata = new HashMap<String, Object>();
 	
+	
+	public String log;
+	
 	public Object get(String name) {
 		Object metadata = this.metadata.get(name);
 		

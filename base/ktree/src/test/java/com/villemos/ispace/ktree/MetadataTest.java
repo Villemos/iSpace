@@ -29,7 +29,6 @@ public class MetadataTest extends TestCase {
 		xstream.fromXML(testString, metadata);
 
 		System.out.println(metadata);
-
 	}
 	
 	public void testToXml() {

@@ -56,12 +56,18 @@ public class KtreeCrawlerEndpoint extends HttpCrawlerEndpoint {
 	
 	protected String user = "";
 	protected String password = "";
-
-	protected String documentTabName = "documents";
 	
 	protected boolean appendMode = false;
 	
 	protected boolean sendStatus = false;
+	
+	/** Flag defining whether the documents shall be extracted. */
+	protected boolean documents = true;
+	protected String documentTabName = "documents";
+	
+	/** Flag defining whether the folders shall be extracted. */
+	protected boolean folders = true;
+	protected String folderTabName = "folders";
 	
 	public KtreeCrawlerEndpoint(String uri, KtreeCrawlerComponent component) {
 		super(uri, component);
@@ -185,5 +191,29 @@ public class KtreeCrawlerEndpoint extends HttpCrawlerEndpoint {
 
 	public void setSendStatus(boolean sendStatus) {
 		this.sendStatus = sendStatus;
+	}
+
+	public boolean isDocuments() {
+		return documents;
+	}
+
+	public void setDocuments(boolean documents) {
+		this.documents = documents;
+	}
+
+	public boolean isFolders() {
+		return folders;
+	}
+
+	public void setFolders(boolean folders) {
+		this.folders = folders;
+	}
+
+	public String getFolderTabName() {
+		return folderTabName;
+	}
+
+	public void setFolderTabName(String folderTabName) {
+		this.folderTabName = folderTabName;
 	}
 }

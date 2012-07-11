@@ -27,11 +27,13 @@ package com.villemos.ispace.ktree;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
@@ -67,7 +69,7 @@ import com.villemos.ispace.ktree.session.Session;
  */
 public class KtreeAccessor extends HttpAccessor {
 
-	private static final Log Logger = LogFactory.getLog(KtreeAccessor.class);
+	private static final Log LOG = LogFactory.getLog(KtreeAccessor.class);
 
 	/** Collection of folders crawled / to be crawled. Will dynamically change as the 
 	 * crawler runs. */
@@ -78,6 +80,8 @@ public class KtreeAccessor extends HttpAccessor {
 	 * documents found. The components is a list of all folders found ending with
 	 * 'Components'. Releases is a list of all folers found ending with 'Release [ID]'. */
 	protected List<Item> documents = new ArrayList<Item>();	
+
+	protected List<Folder> folders = new ArrayList<Folder>();	
 
 	/** Statistics*/
 	protected long entriesProcessed = 0;
@@ -102,6 +106,13 @@ public class KtreeAccessor extends HttpAccessor {
 
 	protected CamelContext camelContext = null;
 
+	public class StringComperatorIgnoreCase implements Comparator<String> {
+
+		public int compare(String o1, String o2) {
+			return o1.compareToIgnoreCase(o2) ;
+		}
+	}
+
 	public KtreeAccessor(Endpoint endpoint, Object object, CamelContext camelContext) {
 		super(endpoint);
 		this.camelContext = camelContext;
@@ -116,10 +127,14 @@ public class KtreeAccessor extends HttpAccessor {
 
 		/** Initialize. */
 		if (((KtreeCrawlerEndpoint)endpoint).isAppendMode() == false) {
+			LOG.info("Append mode DISABLED. Clearing previous crawled data.");
 			uncrawledFolders = new HashMap<String, String>();
 			crawledFolders = new ArrayList<String>();
 			documents = new ArrayList<Item>();	
 			entriesProcessed = 0;
+		}
+		else {
+			LOG.info("Append mode ENABLED. Will add new data to results of previous crawl.");
 		}
 
 		this.poll();
@@ -155,10 +170,19 @@ public class KtreeAccessor extends HttpAccessor {
 
 	}
 
-	public Map<String, List> getResults() {
-		Map<String, List> results = new HashMap<String, List>();
+	protected KtreeCrawlerEndpoint getKtreeEndpoint() {
+		return ((KtreeCrawlerEndpoint) getEndpoint());
+	}
 
-		results.put("documents", documents);
+	public Map<String, List> getResults() {
+		TreeMap<String, List> results = new TreeMap<String, List>(new StringComperatorIgnoreCase());
+
+		if (getKtreeEndpoint().isDocuments()) {
+			results.put(getKtreeEndpoint().getDocumentTabName(), documents);
+		}
+		if (getKtreeEndpoint().isFolders()) {
+			results.put(getKtreeEndpoint().getFolderTabName(), folders);
+		}
 
 		return results;
 	}
@@ -181,29 +205,31 @@ public class KtreeAccessor extends HttpAccessor {
 		try {			
 
 			/** Add root folders to the list of uncrawled folders. */
-			for (String folder : ((KtreeCrawlerEndpoint) getEndpoint()).getInitialFolders()) {
+			for (String folder : getKtreeEndpoint().getInitialFolders()) {
+				LOG.info("Querying root folder '" + folder + "' for processing.");
 				uncrawledFolders.put(folder, "/");
 			}
 
 			/** Iteratively process all URLs */
-			while (uncrawledFolders.size() > 0 && (documents.size() < ((KtreeCrawlerEndpoint)getEndpoint()).getMaxNumberOfDocuments() || ((KtreeCrawlerEndpoint)getEndpoint()).getMaxNumberOfDocuments() == -1)) {
+			while (uncrawledFolders.size() > 0 && (documents.size() < getKtreeEndpoint().getMaxNumberOfDocuments() || getKtreeEndpoint().getMaxNumberOfDocuments() == -1)) {
 				Iterator<Entry<String, String>> it = uncrawledFolders.entrySet().iterator();
 				Entry<String, String> entry = it.next();
 
 				String folderId = entry.getKey();
 				String path = entry.getValue();
 				it.remove();
+				LOG.debug("Processing folder '" + folderId + "' with path '" + path + "'.");
 
 				/** Register this URL as crawled. We do this before we crawl, as no matter whether we succeed or not in
 				 * the crawl of the page, we should not crawl the page again. */
 				crawledFolders.add(folderId);
 				processFolder(folderId, path);
 				sendStatusMessage("Folders crawled: " + crawledFolders.size() + ", Folders pending: " + uncrawledFolders.size() + ", Found documents: " + processed);
-				Logger.info("Folders crawled: " + crawledFolders.size() + ", Folders pending: " + uncrawledFolders.size() + ", Processed documents: " + processed + ". Processing folder ID '" + folderId + "'.");
+				LOG.info("Folders crawled: " + crawledFolders.size() + ", Folders pending: " + uncrawledFolders.size() + ", Processed documents: " + processed + ". Processing folder ID '" + folderId + "'.");
 				entriesProcessed++;
 			}
 
-			Logger.info("Crawled '" + crawledFolders.size() + "' folders.");
+			LOG.info("Crawled '" + crawledFolders.size() + "' folders.");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -234,10 +260,15 @@ public class KtreeAccessor extends HttpAccessor {
 
 		/** Read the folder. */
 		Folder folder = new Folder();
-		xstream.fromXML(page.replaceAll("&", "&amp;"), folder);
+		try {
+			xstream.fromXML(page.replaceAll("&", "&amp;"), folder);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+		}
+		folders.add(folder);
 
-
-		String ignorePattern = ((KtreeCrawlerEndpoint)getEndpoint()).getIgnorePattern();
+		String ignorePattern = getKtreeEndpoint().getIgnorePattern();
 
 		/** Iterate through the items and find all folders. */
 		if (folder.results != null && folder.results.items != null && folder.results.items.items != null) {
@@ -256,19 +287,20 @@ public class KtreeAccessor extends HttpAccessor {
 					/** Check if we should ignore the folder. */
 					if (ignorePattern != null) {
 						if (item.absoluteFilename.matches(ignorePattern) == true) {
-							Logger.info("Ignoring folder '" + item.absoluteFilename);
+							LOG.info("Ignoring folder '" + item.absoluteFilename);
 							continue;
 						}
 					}
 
 					if (crawledFolders.contains(item.id) == false) {
 						uncrawledFolders.put(item.id, item.absoluteFilename + "/");
+						LOG.debug("Querying detected subfolder '" + item.id + "' in path '" + item.absoluteFilename + "' for processing.");
 					}
 					else {
-						Logger.warn("Duplicate folder ID '" + path + "/" + item.id + "'.");
+						LOG.warn("Duplicate folder ID '" + path + "/" + item.id + "'.");
 					}
 				}
-				else {
+				else if ( getKtreeEndpoint().isDocuments() == true) {
 
 					/** Get the metadata for this entry. */
 					MetadataItem metadata = new MetadataItem();
@@ -286,7 +318,7 @@ public class KtreeAccessor extends HttpAccessor {
 							xstream.fromXML(substring.replaceAll("&", "&amp;"), metadata);
 						}
 						else {
-							Logger.warn("Failed to retrieve metadata for document '" + item.id + "'.");
+							LOG.warn("Failed to retrieve metadata for document '" + item.id + "'.");
 						}
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -306,7 +338,7 @@ public class KtreeAccessor extends HttpAccessor {
 					/** Add the document item to the documents found. */
 					documents.add(item);
 					sendStatusMessage("Added document '" + item.absoluteFilename + "'.");
-					Logger.info("Added document '" + item.absoluteFilename + "'.");
+					LOG.info("Added document '" + item.absoluteFilename + "'.");
 					processed++;
 				}
 			}
